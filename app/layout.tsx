@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "./comps/app_sidebar";
+import { CartProvider } from "./comps/cart_context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,8 +26,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html>
-      <body className='min-h-screen'>{children}</body>
+    <html lang="en">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} min-h-screen font-sans antialiased`}
+      >
+        <CartProvider>
+          <SidebarProvider defaultOpen={false}>
+            <AppSidebar />
+            <SidebarTrigger
+              className="fixed top-4 z-30 size-14 transition-[left] duration-200 ease-linear left-8 md:left-4 md:peer-data-[state=expanded]:left-[calc(var(--sidebar-width)-1rem)] [&>svg]:size-8"
+            />
+            {children}
+          </SidebarProvider>
+        </CartProvider>
+      </body>
     </html>
   );
 }

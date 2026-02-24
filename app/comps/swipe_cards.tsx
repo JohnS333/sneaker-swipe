@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { motion, useMotionValue, useTransform, AnimatePresence } from "framer-motion";
-import { ThumbsDown, ThumbsUp } from "lucide-react";
+import { ShoppingBag, ThumbsDown, ThumbsUp, Trash } from "lucide-react";
 import { useCart } from "./cart_context";
 
 interface CardItem {
@@ -218,7 +218,7 @@ function SwipeableCard({
             style={{ scale: likeScale }}
             className="grid h-full w-full place-items-center"
           >
-            <ThumbsUp
+            <ShoppingBag
               strokeWidth={2.8}
               className="h-28 w-28 text-emerald-500 drop-shadow-[0_8px_24px_rgba(16,185,129,0.45)]"
             />
@@ -233,7 +233,7 @@ function SwipeableCard({
             style={{ scale: nopeScale }}
             className="grid h-full w-full place-items-center"
           >
-            <ThumbsDown
+            <Trash
               strokeWidth={2.8}
               className="h-28 w-28 text-red-500 drop-shadow-[0_8px_24px_rgba(239,68,68,0.45)]"
             />

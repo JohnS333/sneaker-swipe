@@ -42,7 +42,7 @@ export function AppSidebar() {
                 >
                   <div className="flex items-start gap-2">
                     <img
-                      src={item.imageUrl}
+                      src={item.image}
                       alt={item.name}
                       className="h-14 w-14 rounded-md object-cover"
                     />

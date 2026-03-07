@@ -4,9 +4,12 @@ import React from "react";
 
 export interface CartItemInput {
   id: number;
+  brand: string;
   name: string;
+  size: number;
+  type: string;
+  image: string;
   price: number;
-  imageUrl: string;
 }
 
 export interface CartItem extends CartItemInput {

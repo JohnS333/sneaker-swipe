@@ -3,8 +3,8 @@
 import React, { useMemo, useState } from "react";
 import { motion, useMotionValue, useTransform, AnimatePresence } from "framer-motion";
 import { ShoppingBag, ThumbsDown, ThumbsUp, Trash } from "lucide-react";
-import { useCart } from "./cart_context";
-import data from "../../shoes_cleaned.json";
+import { useCart } from "@/components/cart-context";
+import data from "@data/seeds/shoes.json";
 
 interface CardItem {
   id: number;

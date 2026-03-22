@@ -9,7 +9,7 @@ import {
   SidebarGroup,
   SidebarHeader,
 } from "@/components/ui/sidebar";
-import { useCart } from "./cart_context";
+import { useCart } from "@/components/cart-context";
 
 export function AppSidebar() {
   const { items, itemCount, subtotal, setQuantity, removeItem, clearCart } = useCart();

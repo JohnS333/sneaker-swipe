@@ -2,76 +2,39 @@
 
 import React, { useMemo, useState } from "react";
 import { motion, useMotionValue, useTransform, AnimatePresence } from "framer-motion";
-import { ThumbsDown, ThumbsUp } from "lucide-react";
-import { useCart } from "./cart_context";
+import { ShoppingBag, ThumbsDown, ThumbsUp, Trash } from "lucide-react";
+import { useCart } from "@/components/cart-context";
+import data from "@data/seeds/shoes.json";
 
 interface CardItem {
   id: number;
-  url: string;
+  brand: string;
   name: string;
+  size: number;
+  type: string;
+  image: string;
   price: number;
 }
 
+const ALL_CARDS: CardItem[] = data;
 
-const INITIAL_CARDS: CardItem[] = [
-  {
-    id: 1,
-    url: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=2370&auto=format&fit=crop",
-    name: "Nova Sprint",
-    price: 59.0,
-  },
-  {
-    id: 2,
-    url: "https://images.unsplash.com/photo-1512374382149-233c42b6a83b?q=80&w=2235&auto=format&fit=crop",
-    name: "Street Drift",
-    price: 72.0,
-  },
-  {
-    id: 3,
-    url: "https://images.unsplash.com/photo-1539185441755-769473a23570?q=80&w=2342&auto=format&fit=crop",
-    name: "Cloud Runner",
-    price: 64.0,
-  },
-  {
-    id: 4,
-    url: "https://images.unsplash.com/photo-1549298916-b41d501d3772?q=80&w=2224&auto=format&fit=crop",
-    name: "Urban Flux",
-    price: 88.0,
-  },
-  {
-    id: 5,
-    url: "https://images.unsplash.com/photo-1516478177764-9fe5bd7e9717?q=80&w=2340&auto=format&fit=crop",
-    name: "Aero Pulse",
-    price: 67.0,
-  },
-  {
-    id: 6,
-    url: "https://images.unsplash.com/photo-1570464197285-9949814674a7?q=80&w=2273&auto=format&fit=crop",
-    name: "Rogue Mid",
-    price: 74.0,
-  },
-  {
-    id: 7,
-    url: "https://images.unsplash.com/photo-1578608712688-36b5be8823dc?q=80&w=2187&auto=format&fit=crop",
-    name: "Prism Step",
-    price: 69.0,
-  },
-  {
-    id: 8,
-    url: "https://images.unsplash.com/photo-1505784045224-1247b2b29cf3?q=80&w=2340&auto=format&fit=crop",
-    name: "Momentum Pro",
-    price: 92.0,
-  },
-];
+function shuffled(arr: CardItem[]): CardItem[] {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
 
 export default function SwipeCards() {
-  const [cards, setCards] = useState<CardItem[]>(INITIAL_CARDS);
+  const [cards, setCards] = useState<CardItem[]>(() => shuffled(ALL_CARDS));
   const { addItem } = useCart();
 
   const top = cards[cards.length - 1] ?? null;
   const rest = useMemo(() => cards.slice(0, -1), [cards]);
 
-  const reset = () => setCards(INITIAL_CARDS);
+  const reset = () => setCards(shuffled(ALL_CARDS));
 
   const removeTop = () => setCards((prev) => prev.slice(0, -1));
 
@@ -81,9 +44,12 @@ export default function SwipeCards() {
     if (direction === 1) {
       addItem({
         id: top.id,
+        brand: top.brand,
         name: top.name,
+        size: top.size,
+        type: top.type,
+        image: top.image,
         price: top.price,
-        imageUrl: top.url,
       });
     }
 
@@ -109,11 +75,11 @@ export default function SwipeCards() {
             }}
           >
             <img
-              src={c.url}
+              src={c.image}
               alt=""
               draggable={false}
               onDragStart={(e) => e.preventDefault()}
-              className="h-full w-full rounded-lg object-cover pointer-events-none"
+              className="h-full w-full rounded-lg object-contain pointer-events-none"
             />
           </motion.div>
         ))}
@@ -203,11 +169,11 @@ function SwipeableCard({
     >
       <div className="relative h-full w-full overflow-hidden rounded-lg">
         <img
-          src={card.url}
+          src={card.image}
           alt=""
           draggable={false}
           onDragStart={(e) => e.preventDefault()}
-          className="h-full w-full object-cover pointer-events-none"
+          className="h-full w-full object-contain pointer-events-none"
         />
 
         <motion.div
@@ -218,7 +184,7 @@ function SwipeableCard({
             style={{ scale: likeScale }}
             className="grid h-full w-full place-items-center"
           >
-            <ThumbsUp
+            <ShoppingBag
               strokeWidth={2.8}
               className="h-28 w-28 text-emerald-500 drop-shadow-[0_8px_24px_rgba(16,185,129,0.45)]"
             />
@@ -233,7 +199,7 @@ function SwipeableCard({
             style={{ scale: nopeScale }}
             className="grid h-full w-full place-items-center"
           >
-            <ThumbsDown
+            <Trash
               strokeWidth={2.8}
               className="h-28 w-28 text-red-500 drop-shadow-[0_8px_24px_rgba(239,68,68,0.45)]"
             />

@@ -42,4 +42,7 @@ yarn-error.log*
 next-env.d.ts
 /apps/web/.next
 /.claude
+
+
 /apps/web/node_modules
+.env*.local

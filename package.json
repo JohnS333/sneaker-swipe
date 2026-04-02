@@ -11,7 +11,5 @@
     "start": "npm run start --workspace=apps/web"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.10.0",
-    "@supabase/supabase-js": "^2.101.0"
   }
 }

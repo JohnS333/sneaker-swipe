@@ -6,6 +6,7 @@ import { ShoppingBag, ThumbsDown, ThumbsUp, Trash } from "lucide-react";
 import { createClient as createBrowserClient } from "@/utils/supabase/client";
 import { useCart } from "@/components/cart-context";
 import data from "@data/seeds/shoes.json";
+import AuthStatus from "@/components/auth-status";
 
 interface CardItem {
   id: number;
@@ -28,7 +29,13 @@ function shuffled(arr: CardItem[]): CardItem[] {
   return copy;
 }
 
-export default function SwipeCards({ isSignedIn }: { isSignedIn: boolean }) {
+export default function SwipeCards({
+  isSignedIn,
+  username,
+}: {
+  isSignedIn: boolean;
+  username: string | null;
+}) {
   const [cards, setCards] = useState<CardItem[]>(() => shuffled(ALL_CARDS));
   const { addItem } = useCart();
 
@@ -71,6 +78,8 @@ export default function SwipeCards({ isSignedIn }: { isSignedIn: boolean }) {
         backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke-width='2' stroke='%23d4d4d4'%3e%3cpath d='M0 .5H31.5V32'/%3e%3c/svg%3e")`,
       }}
     >
+      {isSignedIn && username && <AuthStatus username={username} />}
+
       <div className="relative h-[42rem] w-[32rem]">
         {rest.slice(-2).map((c, idx) => (
           <motion.div

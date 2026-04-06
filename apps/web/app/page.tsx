@@ -12,5 +12,11 @@ export default async function Home() {
     // tutorial data fetch.
   // const { data: todos } = await supabase.from('todos').select()
 
-  return <SwipeCards isSignedIn={!!user} />;
+  const username =
+    user?.user_metadata?.full_name ??
+    user?.user_metadata?.name ??
+    user?.email ??
+    null;
+
+  return <SwipeCards isSignedIn={!!user} username={username} />;
 }

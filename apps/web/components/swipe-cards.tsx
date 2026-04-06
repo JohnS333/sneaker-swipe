@@ -243,7 +243,7 @@ function SwipeableCard({
   );
 }
 
-function continueWithGoogle() {
+async function continueWithGoogle() {
   const supabase = createBrowserClient();
 
   supabase.auth.signInWithOAuth({

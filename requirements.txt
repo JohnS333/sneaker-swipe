@@ -1,5 +1,5 @@
-fastapi
-uvicorn
+pydantic
 qdrant-client
 sentence-transformers
-pydantic
+fastapi
+uvicorn[standard]

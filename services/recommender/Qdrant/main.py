@@ -21,7 +21,7 @@ app.add_middleware(
 )
 
 # 2. Initialize Manager and Embedder
-qdrant_url = os.environ.get("QDRANT_URL", "http://localhost:6333")
+qdrant_url = os.environ.get("QDRANT_URL", "https://localhost:6333")
 qdrant = Qdrant_Manager(url=qdrant_url, name="vector_embeddings")
 
 # Load the model once when the app starts

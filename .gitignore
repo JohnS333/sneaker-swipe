@@ -50,3 +50,7 @@ next-env.d.ts
 /apps/web/.next
 /.claude
 /.vscode
+
+
+/apps/web/node_modules
+.env*.local

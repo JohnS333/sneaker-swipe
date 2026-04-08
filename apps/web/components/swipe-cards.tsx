@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion, useMotionValue, useTransform, AnimatePresence } from "framer-motion";
 import { ShoppingBag, ThumbsDown, ThumbsUp, Trash } from "lucide-react";
+import { createClient as createBrowserClient } from "@/utils/supabase/client";
 import { useCart } from "@/components/cart-context";
 import data from "@data/seeds/shoes.json";
+import AuthStatus from "@/components/auth-status";
 
 interface CardItem {
   id: number;
@@ -27,9 +29,22 @@ function shuffled(arr: CardItem[]): CardItem[] {
   return copy;
 }
 
-export default function SwipeCards() {
+export default function SwipeCards({
+  isSignedIn,
+  username,
+}: {
+  isSignedIn: boolean;
+  username: string | null;
+}) {
   const [cards, setCards] = useState<CardItem[]>(() => shuffled(ALL_CARDS));
   const { addItem } = useCart();
+
+  // shuffle cards on the client only
+  useEffect(() => {
+    const shuffleCardsAsync = async () => { setCards(shuffled(ALL_CARDS)); } 
+
+    shuffleCardsAsync();
+  }, []);
 
   const top = cards[cards.length - 1] ?? null;
   const rest = useMemo(() => cards.slice(0, -1), [cards]);
@@ -63,6 +78,8 @@ export default function SwipeCards() {
         backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke-width='2' stroke='%23d4d4d4'%3e%3cpath d='M0 .5H31.5V32'/%3e%3c/svg%3e")`,
       }}
     >
+      {isSignedIn && username && <AuthStatus username={username} />}
+
       <div className="relative h-[42rem] w-[32rem]">
         {rest.slice(-2).map((c, idx) => (
           <motion.div
@@ -108,6 +125,22 @@ export default function SwipeCards() {
           )}
         </AnimatePresence>
       </div>
+
+      {!isSignedIn && (
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm pointer-events-auto">
+          <div className="grid min-h-full place-items-center p-6">
+            <div className="w-full max-w-sm rounded-xl bg-white p-6 text-center shadow-xl">
+              <h1 className="text-2xl font-semibold">Welcome to SneakerSwipe</h1>
+              <button
+                onClick={continueWithGoogle}
+                className="mt-5 w-full rounded-md bg-black px-4 py-2 text-white"
+              >
+                Continue with Google
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -208,4 +241,15 @@ function SwipeableCard({
       </div>
     </motion.div>
   );
+}
+
+async function continueWithGoogle() {
+  const supabase = createBrowserClient();
+
+  supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback`,
+    },
+  });
 }

@@ -10,6 +10,8 @@
     "lint": "npm run lint --workspace=apps/web",
     "start": "npm run start --workspace=apps/web"
   },
-  "dependencies": {
+  "devDependencies": {
+    "supabase": "^2.85.0"
   }
 }
+

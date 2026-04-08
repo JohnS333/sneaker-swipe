@@ -42,12 +42,12 @@ export default function Main({
     return (
       <SidebarProvider defaultOpen={false}>
         <AppSidebar />
+        <SidebarTrigger className="fixed top-4 z-30 size-14 transition-[left] duration-200 ease-linear left-8 md:left-4 md:peer-data-[state=expanded]:left-[calc(var(--sidebar-width)-1rem)] [&>svg]:size-8" />
         <div
           className="flex flex-col flex-1 min-h-[100svh] bg-neutral-100 touch-none select-none overflow-hidden"
           style={BG_STYLE}
         >
           {isSignedIn && username && <AuthStatus username={username} />}
-          <SidebarTrigger className="fixed top-4 z-30 size-14 transition-[left] duration-200 ease-linear left-8 md:left-4 md:peer-data-[state=expanded]:left-[calc(var(--sidebar-width)-1rem)] [&>svg]:size-8" />
           <PillSelector tab={tab} onTabChange={setTab} />
           <SwipeCards />
           {signInModal}

@@ -36,7 +36,7 @@ export default function SwipeCards({
   isSignedIn: boolean;
   username: string | null;
 }) {
-  const [cards, setCards] = useState<CardItem[]>(() => shuffled(ALL_CARDS));
+  const [cards, setCards] = useState<CardItem[]>(ALL_CARDS);
   const { addItem } = useCart();
 
   // shuffle cards on the client only

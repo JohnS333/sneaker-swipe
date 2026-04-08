@@ -58,7 +58,7 @@ export default function Main({
 
   return (
     <div
-      className="min-h-[100svh] w-full bg-neutral-100 touch-none select-none"
+      className="min-h-[100svh] w-full bg-neutral-100"
       style={BG_STYLE}
     >
       {isSignedIn && username && <AuthStatus username={username} />}

@@ -5,7 +5,8 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import AuthStatus from "@/components/auth-status";
 import PillSelector, { type Tab } from "@/components/pill-selector";
-import SwipeCards from "@/components/swipe-cards";
+import dynamic from "next/dynamic";
+const SwipeCards = dynamic(() => import("@/components/swipe-cards"), { ssr: false });
 import Listings from "@/components/listings";
 import { createClient as createBrowserClient } from "@/utils/supabase/client";
 
@@ -38,34 +39,29 @@ export default function Main({
     </div>
   );
 
-  if (tab === "explore") {
-    return (
-      <SidebarProvider defaultOpen={false}>
-        <AppSidebar />
-        <SidebarTrigger className="fixed top-4 z-30 size-14 transition-[left] duration-200 ease-linear left-8 md:left-4 md:peer-data-[state=expanded]:left-[calc(var(--sidebar-width)-1rem)] [&>svg]:size-8" />
-        <div
-          className="flex flex-col flex-1 min-h-[100svh] bg-neutral-100 touch-none select-none overflow-hidden"
-          style={BG_STYLE}
-        >
-          {isSignedIn && username && <AuthStatus username={username} />}
-          <PillSelector tab={tab} onTabChange={setTab} />
-          <SwipeCards />
-          {signInModal}
-        </div>
-      </SidebarProvider>
-    );
-  }
+  const isExplore = tab === "explore";
 
   return (
-    <div
-      className="min-h-[100svh] w-full bg-neutral-100"
-      style={BG_STYLE}
-    >
-      {isSignedIn && username && <AuthStatus username={username} />}
-      <PillSelector tab={tab} onTabChange={setTab} />
-      <Listings />
-      {signInModal}
-    </div>
+    <SidebarProvider defaultOpen={false}>
+      <AppSidebar />
+      <SidebarTrigger
+        className={`fixed top-4 z-30 size-14 transition-[left] duration-200 ease-linear left-8 md:left-4 md:peer-data-[state=expanded]:left-[calc(var(--sidebar-width)-1rem)] [&>svg]:size-8${isExplore ? "" : " hidden"}`}
+      />
+      <div
+        className={`flex-1 min-h-[100svh] bg-neutral-100${isExplore ? " flex flex-col touch-none select-none overflow-hidden" : ""}`}
+        style={BG_STYLE}
+      >
+        {isSignedIn && username && <AuthStatus username={username} />}
+        <PillSelector tab={tab} onTabChange={setTab} />
+        <div style={{ display: isExplore ? undefined : "none" }}>
+          <SwipeCards />
+        </div>
+        <div style={{ display: isExplore ? "none" : undefined }}>
+          <Listings />
+        </div>
+        {signInModal}
+      </div>
+    </SidebarProvider>
   );
 }
 

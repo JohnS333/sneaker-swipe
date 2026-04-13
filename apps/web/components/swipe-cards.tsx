@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { motion, useMotionValue, useTransform, AnimatePresence } from "framer-motion";
 import { ShoppingBag, Trash } from "lucide-react";
 import { useCart } from "@/components/cart-context";
@@ -28,12 +28,8 @@ function shuffled(arr: CardItem[]): CardItem[] {
 }
 
 export default function SwipeCards() {
-  const [cards, setCards] = useState<CardItem[]>(ALL_CARDS);
+  const [cards, setCards] = useState<CardItem[]>(() => shuffled(ALL_CARDS));
   const { addItem } = useCart();
-
-  useEffect(() => {
-    setCards(shuffled(ALL_CARDS));
-  }, []);
 
   const top = cards[cards.length - 1] ?? null;
   const rest = useMemo(() => cards.slice(0, -1), [cards]);

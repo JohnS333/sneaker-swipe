@@ -29,7 +29,7 @@ class Qdrant_Manager:
         else:
             print(f"Collection '{self.db_name}' already exists. Setup skipped.")
 
-    def add_vectors(self, vectors: List[List[float]], ids: List[int], payloads: List[Dict[str, Any]]):
+    def add_points(self, vectors: List[List[float]], ids: List[str], payloads: List[Dict[str, Any]]):
         """Uploads many vectors simultaneously"""
         points = [
             PointStruct(id=idx, vector=vec, payload=pay)
@@ -50,7 +50,7 @@ class Qdrant_Manager:
             limit=n
             )
     
-    def delete(self, points: List[Any]):
+    def delete(self, points: List[str]):
         """Points can be a list of points, so we can delete more than one point at a time"""
         return self.client.delete(
             collection_name=self.db_name,

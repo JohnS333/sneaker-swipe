@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { User } from "lucide-react";
-import { createClient as createBrowserClient } from "@/utils/supabase/client";
+import { createClient as createBrowserClient } from "@/lib/supabase/client";
 
 // ─── Animation variants ───────────────────────────────────────────────────────
 

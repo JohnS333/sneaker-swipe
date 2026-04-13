@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { createClient } from "@/utils/supabase/server";
-import { ensureUserRow } from "@/utils/supabase/ensure-user-row";
+import { createClient } from "@/lib/supabase/server";
+import { ensureUserRow } from "@/lib/supabase/ensure-user-row";
 
 
 

@@ -8,7 +8,7 @@ import PillSelector, { type Tab } from "@/components/pill-selector";
 import dynamic from "next/dynamic";
 const SwipeCards = dynamic(() => import("@/components/swipe-cards"), { ssr: false });
 import Listings from "@/components/listings";
-import { createClient as createBrowserClient } from "@/utils/supabase/client";
+import { createClient as createBrowserClient } from "@/lib/supabase/client";
 
 const BG_STYLE = {
   backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke-width='2' stroke='%23d4d4d4'%3e%3cpath d='M0 .5H31.5V32'/%3e%3c/svg%3e")`,

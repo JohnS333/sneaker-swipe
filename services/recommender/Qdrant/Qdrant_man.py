@@ -44,12 +44,15 @@ class Qdrant_Manager:
 
     def query(self, user_vector: List[float], n: int):
         """Returns the id of the 'n'  vectors closest to the 'user_vector'"""
-        return self.client.query_points(
+        result = self.client.query_points(
             collection_name=self.db_name,
             query=user_vector,
-            with_payload=False,
+            with_payload=True,
+            with_vectors=False,
             limit=n
             )
+        
+        return result.points
     
     def query_by_ID(self, point_id: uuid.UUID):
         """Returns the vector whose point's id matches id"""
@@ -58,7 +61,7 @@ class Qdrant_Manager:
             ids=[str(point_id)],
             with_vectors=True
         )
-        
+
         return result[0] if result else None
     
     def delete(self, points: List[str]):

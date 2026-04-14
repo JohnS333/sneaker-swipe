@@ -84,6 +84,20 @@ async def search_vector(request: SearchRequest):
         return {"results": results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@app.get("/vector-by-id")
+async def get_vector_id(id: uuid.UUID):
+    try:
+        result = qdrant.query_by_ID(id)
+        
+        if not result:
+            raise HTTPException(status_code=404, detail=f"Vector with ID {id} not found")
+        
+        return result
+    except HTTPException:
+        raise # Re-raise the 404 so it isn't caught by the general Exception block
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 @app.delete("/remove-vector/{vector_id}")
 async def remove_vector(vector_id: uuid.UUID): 

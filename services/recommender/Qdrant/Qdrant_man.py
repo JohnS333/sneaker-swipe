@@ -1,6 +1,7 @@
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct, PointIdsList
 from typing import List, Dict, Any
+import uuid
 
 class Qdrant_Manager:
     def __init__(self, url: str, name: str, vector_size: int = 384, distance_metric: Distance = Distance.COSINE):
@@ -49,6 +50,16 @@ class Qdrant_Manager:
             with_payload=False,
             limit=n
             )
+    
+    def query_by_ID(self, point_id: uuid.UUID):
+        """Returns the vector whose point's id matches id"""
+        result = self.client.retrieve(
+            collection_name=self.db_name,
+            ids=[str(point_id)],
+            with_vectors=True
+        )
+        
+        return result[0] if result else None
     
     def delete(self, points: List[str]):
         """Points can be a list of points, so we can delete more than one point at a time"""

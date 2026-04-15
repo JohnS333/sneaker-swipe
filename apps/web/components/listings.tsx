@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Plus } from "lucide-react";
 import ListingCard, { type Listing } from "@/components/listing-card";
 import { createClient as createBrowserClient } from "@/lib/supabase/client";
+import { deleteListing } from "@/lib/supabase/listings-functions-proxy";
 
 const supabase = createBrowserClient();
 const { data } = await supabase.auth.getUser();
@@ -88,9 +89,14 @@ export default function Listings() {
     );
   };
 
-  const handleDelete = (listingID: string) => {
+  const handleDelete = async (listingID: string) => {
     console.log("TODO: Delete listing via Supabase edge function", listingID);
-    setListings((prev) => prev.filter((l) => l.listingID !== listingID));
+    try {
+      await deleteListing(listingID, supabase);
+      setListings((prev) => prev.filter((l) => l.listingID !== listingID));
+    } catch (error) {
+      console.error("Error deleting listing from database:", error);
+    }
   };
 
   const isEmpty = listings.length === 0 && !creating;

@@ -4,48 +4,55 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Plus } from "lucide-react";
 import ListingCard, { type Listing } from "@/components/listing-card";
+import { createClient as createBrowserClient } from "@/lib/supabase/client";
+
+const supabase = createBrowserClient();
+const { data } = await supabase.auth.getUser();
+const userID = data?.user?.id;
+console.log("Current user ID:", userID);
+
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 
 const MOCK_LISTINGS: Listing[] = [
   {
-    id: "mock-1",
+    listingID: "mock-1",
     brand: "Nike",
     name: "Air Force 1 '07 White",
     type: "sneakers",
     size: 9.5,
     price: 65.99,
-    image:
+    imageURL:
       "https://images.stockx.com/images/Nike-Air-Force-1-07-White-Product.jpg",
   },
   {
-    id: "mock-2",
+    listingID: "mock-2",
     brand: "Nike",
     name: "Dunk Low Panda",
     type: "sneakers",
     size: 11,
     price: 113.99,
-    image:
+    imageURL:
       "https://images.stockx.com/images/Nike-Dunk-Low-Retro-White-Black-2021-Product.jpg?fit=fill&bg=FFFFFF&w=700&h=500&fm=webp&auto=compress&q=90&dpr=2&trim=color&updated_at=1738193358",
   },
   {
-    id: "mock-3",
+    listingID: "mock-3",
     brand: "Nike",
     name: "Blazer Mid '77 Vintage",
     type: "high-tops",
     size: 8,
     price: 129.99,
-    image:
+    imageURL:
       "https://images.stockx.com/images/Nike-Blazer-Mid-77-Vintage-White-Black-Product.jpg",
   },
   {
-    id: "mock-4",
+    listingID: "mock-4",
     brand: "Nike",
     name: "Air Max 97 Silver Bullet",
     type: "running shoes",
     size: 10.5,
     price: 97.99,
-    image:
+    imageURL:
       "https://images.stockx.com/images/Nike-Air-Max-97-Silver-Bullet-2016-Product.jpg",
   },
 ];
@@ -56,26 +63,34 @@ export default function Listings() {
   const [listings, setListings] = useState<Listing[]>(MOCK_LISTINGS);
   const [creating, setCreating] = useState(false);
 
-  const handleCreate = (data: Omit<Listing, "id">) => {
-    const newListing: Listing = { ...data, id: crypto.randomUUID() };
+  const handleCreate = async (data: Omit<Listing, "listingID">) => {
+    const newListing: Listing = { ...data, listingID: crypto.randomUUID() };
     console.log(
       "TODO: Persist new listing via Supabase edge function",
       newListing
     );
+    try {
+      console.log("Inserting new listing into Supabase:", newListing);
+      const response = await supabase.from("listings").insert(newListing);
+      console.log("Supabase response:", response);
+    } catch (error) {
+      console.error("Error creating listing on database:", error);
+    }
+
     setListings((prev) => [newListing, ...prev]);
     setCreating(false);
   };
 
-  const handleUpdate = (id: string, data: Omit<Listing, "id">) => {
-    console.log("TODO: Update listing via Supabase edge function", id, data);
+  const handleUpdate = (listingID: string, data: Omit<Listing, "listingID">) => {
+    console.log("TODO: Update listing via Supabase edge function", listingID, data);
     setListings((prev) =>
-      prev.map((l) => (l.id === id ? { ...data, id } : l))
+      prev.map((l) => (l.listingID === listingID ? { ...data, listingID } : l))
     );
   };
 
-  const handleDelete = (id: string) => {
-    console.log("TODO: Delete listing via Supabase edge function", id);
-    setListings((prev) => prev.filter((l) => l.id !== id));
+  const handleDelete = (listingID: string) => {
+    console.log("TODO: Delete listing via Supabase edge function", listingID);
+    setListings((prev) => prev.filter((l) => l.listingID !== listingID));
   };
 
   const isEmpty = listings.length === 0 && !creating;
@@ -134,10 +149,10 @@ export default function Listings() {
             )}
             {listings.map((listing, i) => (
               <ListingCard
-                key={listing.id}
+                key={listing.listingID}
                 listing={listing}
-                onSave={(data) => handleUpdate(listing.id, data)}
-                onDelete={() => handleDelete(listing.id)}
+                onSave={(data) => handleUpdate(listing.listingID, data)}
+                onDelete={() => handleDelete(listing.listingID)}
                 index={i + (creating ? 1 : 0)}
               />
             ))}

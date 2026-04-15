@@ -3,17 +3,27 @@
 import React, { useRef, useState } from "react";
 import { motion, useAnimation } from "framer-motion";
 import { Camera, Check, Edit2, Trash2, X } from "lucide-react";
+import { createClient as createBrowserClient } from "@/lib/supabase/client";
+
+const supabase = createBrowserClient();
+
+
+const { data } = await supabase.auth.getUser();
+const userID = data?.user?.id;
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface Listing {
-  id: string;
+  listingID: string;
   brand: string;
   name: string;
   type: string;
   size: number;
   price: number;
-  image: string;
+  imageURL: string;
+  listerUID?: string;
+  description?: string;
 }
 
 const SHOE_TYPES = [
@@ -73,9 +83,9 @@ function ViewFace({ listing, onEdit, onDelete }: ViewFaceProps) {
   return (
     <div className="flex h-full">
       <div className="relative w-[38%] flex-shrink-0 overflow-hidden border-r border-neutral-200 bg-neutral-50">
-        {listing.image ? (
+        {listing.imageURL ? (
           <motion.img
-            src={listing.image}
+            src={listing.imageURL}
             alt={listing.name}
             draggable={false}
             className="h-full w-full object-contain"
@@ -263,7 +273,7 @@ function FormFace({
 
 interface ListingCardProps {
   listing: Listing | null;
-  onSave: (data: Omit<Listing, "id">) => void;
+  onSave: (data: Omit<Listing, "listingID">) => void;
   onDelete: () => void;
   index?: number;
 }
@@ -281,7 +291,7 @@ export default function ListingCard({
     isNew ? emptyForm() : fromListing(listing)
   );
   const [imagePreview, setImagePreview] = useState<string>(
-    listing?.image ?? ""
+    listing?.imageURL ?? ""
   );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -303,7 +313,7 @@ export default function ListingCard({
   const handleEdit = () =>
     flipTo(true, () => {
       setForm(listing ? fromListing(listing) : emptyForm());
-      setImagePreview(listing?.image ?? "");
+      setImagePreview(listing?.imageURL ?? "");
     });
 
   const handleCancel = () => {
@@ -315,13 +325,14 @@ export default function ListingCard({
   };
 
   const handleSave = () => {
-    const data: Omit<Listing, "id"> = {
+    const data: Omit<Listing, "listingID"> = {
       brand: form.brand,
       name: form.name,
       type: form.type,
       size: parseFloat(form.size) || 0,
       price: parseFloat(form.price) || 0,
-      image: imagePreview,
+      imageURL: imagePreview,
+      listerUID: userID || undefined,
     };
     console.log(
       isNew

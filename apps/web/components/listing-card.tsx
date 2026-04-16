@@ -145,6 +145,7 @@ interface FormFaceProps {
   form: FormValues;
   imagePreview: string;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
+  uploading: boolean;
   onField: (key: keyof FormValues) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   onImageClick: () => void;
   onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -156,6 +157,7 @@ function FormFace({
   form,
   imagePreview,
   fileInputRef,
+  uploading,
   onField,
   onImageClick,
   onImageChange,
@@ -248,12 +250,13 @@ function FormFace({
         </div>
         <div className="mt-auto flex gap-1.5">
           <motion.button
-            whileTap={{ scale: 0.96 }}
+            whileTap={!uploading ? { scale: 0.96 } : undefined}
             onClick={onSave}
-            className="flex flex-1 items-center justify-center gap-1 rounded-md bg-neutral-900 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-neutral-700"
+            disabled={uploading}
+            className="flex flex-1 items-center justify-center gap-1 rounded-md bg-neutral-900 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <Check className="h-3 w-3" />
-            Save
+            {uploading ? "Uploading…" : "Save"}
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.96 }}
@@ -293,6 +296,8 @@ export default function ListingCard({
   const [imagePreview, setImagePreview] = useState<string>(
     listing?.imageURL ?? ""
   );
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const controls = useAnimation();
@@ -317,6 +322,7 @@ export default function ListingCard({
     });
 
   const handleCancel = () => {
+    setImageFile(null);
     if (isNew) {
       onDelete();
     } else {
@@ -324,22 +330,40 @@ export default function ListingCard({
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    let resolvedImageURL = imagePreview;
+
+    if (imageFile) {
+      setUploading(true);
+      try {
+        const ext = imageFile.name.split(".").pop() ?? "jpg";
+        const path = `listings/${userID ?? "public"}/${crypto.randomUUID()}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from("listing-images")
+          .upload(path, imageFile);
+        if (uploadError) throw uploadError;
+        const { data: urlData } = supabase.storage
+          .from("listing-images")
+          .getPublicUrl(path);
+        resolvedImageURL = urlData.publicUrl;
+      } catch (err) {
+        console.error("Image upload failed:", err);
+        setUploading(false);
+        return;
+      }
+      setUploading(false);
+    }
+
     const data: Omit<Listing, "listingID"> = {
       brand: form.brand,
       name: form.name,
       type: form.type,
       size: parseFloat(form.size) || 0,
       price: parseFloat(form.price) || 0,
-      imageURL: imagePreview,
+      imageURL: resolvedImageURL,
       listerUID: userID || undefined,
     };
-    console.log(
-      isNew
-        ? "TODO: Create listing via Supabase edge function"
-        : "TODO: Update listing via Supabase edge function",
-      data
-    );
+    setImageFile(null);
     onSave(data);
     if (!isNew) flipTo(false);
   };
@@ -347,7 +371,7 @@ export default function ListingCard({
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    console.log("TODO: Upload image to Supabase storage via edge function", file);
+    setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
   };
 
@@ -376,6 +400,7 @@ export default function ListingCard({
             form={form}
             imagePreview={imagePreview}
             fileInputRef={fileInputRef}
+            uploading={uploading}
             onField={onField}
             onImageClick={() => fileInputRef.current?.click()}
             onImageChange={handleImageChange}

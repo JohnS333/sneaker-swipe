@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Plus } from "lucide-react";
 import ListingCard, { type Listing } from "@/components/listing-card";
 import { createClient as createBrowserClient } from "@/lib/supabase/client";
-import { deleteListing } from "@/lib/supabase/listings-functions-proxy";
+import { deleteListing, fetchUserListings, updateListingsCache } from "@/lib/supabase/listings-functions-proxy";
 
 const supabase = createBrowserClient();
 const { data } = await supabase.auth.getUser();
@@ -13,56 +13,23 @@ const userID = data?.user?.id;
 console.log("Current user ID:", userID);
 
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
-
-const MOCK_LISTINGS: Listing[] = [
-  {
-    listingID: "mock-1",
-    brand: "Nike",
-    name: "Air Force 1 '07 White",
-    type: "sneakers",
-    size: 9.5,
-    price: 65.99,
-    imageURL:
-      "https://images.stockx.com/images/Nike-Air-Force-1-07-White-Product.jpg",
-  },
-  {
-    listingID: "mock-2",
-    brand: "Nike",
-    name: "Dunk Low Panda",
-    type: "sneakers",
-    size: 11,
-    price: 113.99,
-    imageURL:
-      "https://images.stockx.com/images/Nike-Dunk-Low-Retro-White-Black-2021-Product.jpg?fit=fill&bg=FFFFFF&w=700&h=500&fm=webp&auto=compress&q=90&dpr=2&trim=color&updated_at=1738193358",
-  },
-  {
-    listingID: "mock-3",
-    brand: "Nike",
-    name: "Blazer Mid '77 Vintage",
-    type: "high-tops",
-    size: 8,
-    price: 129.99,
-    imageURL:
-      "https://images.stockx.com/images/Nike-Blazer-Mid-77-Vintage-White-Black-Product.jpg",
-  },
-  {
-    listingID: "mock-4",
-    brand: "Nike",
-    name: "Air Max 97 Silver Bullet",
-    type: "running shoes",
-    size: 10.5,
-    price: 97.99,
-    imageURL:
-      "https://images.stockx.com/images/Nike-Air-Max-97-Silver-Bullet-2016-Product.jpg",
-  },
-];
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Listings() {
-  const [listings, setListings] = useState<Listing[]>(MOCK_LISTINGS);
+  const [listings, setListings] = useState<Listing[]>([]);
   const [creating, setCreating] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userID) {
+      setLoading(false);
+      return;
+    }
+    fetchUserListings(supabase, userID)
+      .then(setListings)
+      .catch((err) => console.error("Failed to fetch listings:", err))
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleCreate = async (data: Omit<Listing, "listingID">) => {
     const newListing: Listing = { ...data, listingID: crypto.randomUUID() };
@@ -78,7 +45,11 @@ export default function Listings() {
       console.error("Error creating listing on database:", error);
     }
 
-    setListings((prev) => [newListing, ...prev]);
+    setListings((prev) => {
+      const next = [newListing, ...prev];
+      updateListingsCache(next);
+      return next;
+    });
     setCreating(false);
   };
 
@@ -93,13 +64,17 @@ export default function Listings() {
     console.log("TODO: Delete listing via Supabase edge function", listingID);
     try {
       await deleteListing(listingID, supabase);
-      setListings((prev) => prev.filter((l) => l.listingID !== listingID));
+      setListings((prev) => {
+        const next = prev.filter((l) => l.listingID !== listingID);
+        updateListingsCache(next);
+        return next;
+      });
     } catch (error) {
       console.error("Error deleting listing from database:", error);
     }
   };
 
-  const isEmpty = listings.length === 0 && !creating;
+  const isEmpty = listings.length === 0 && !creating && !loading;
 
   return (
     <div className="w-full px-6 py-6">
@@ -143,6 +118,16 @@ export default function Listings() {
           layout
           className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"
         >
+          {loading && (
+            <>
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="h-[200px] animate-pulse rounded-xl border border-neutral-200 bg-neutral-100"
+                />
+              ))}
+            </>
+          )}
           <AnimatePresence mode="popLayout">
             {creating && (
               <ListingCard

@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Plus } from "lucide-react";
 import ListingCard, { type Listing } from "@/components/listing-card";
 import { createClient as createBrowserClient } from "@/lib/supabase/client";
-import { deleteListing, fetchUserListings, updateListingsCache } from "@/lib/supabase/listings-functions-proxy";
+import { deleteListing, fetchUserListings, updateListingsCache, upsertListing } from "@/lib/supabase/listings-functions-proxy";
 
 const supabase = createBrowserClient();
 const { data } = await supabase.auth.getUser();
@@ -33,13 +33,9 @@ export default function Listings() {
 
   const handleCreate = async (data: Omit<Listing, "listingID">) => {
     const newListing: Listing = { ...data, listingID: crypto.randomUUID() };
-    console.log(
-      "TODO: Persist new listing via Supabase edge function",
-      newListing
-    );
     try {
       console.log("Inserting new listing into Supabase:", newListing);
-      const response = await supabase.from("listings").insert(newListing);
+      const response = await upsertListing(newListing, supabase);
       console.log("Supabase response:", response);
     } catch (error) {
       console.error("Error creating listing on database:", error);

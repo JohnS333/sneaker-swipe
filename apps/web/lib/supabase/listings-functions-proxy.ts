@@ -40,4 +40,17 @@ const deleteListing = async (listingID: string, supabase: SupabaseClient) => {
   return data; // { ok: true, listingID }
 };
 
-export { fetchUserListings, updateListingsCache, deleteListing };
+const upsertListing = async (listing: Listing, supabase: SupabaseClient) => {
+  const { data, error } = await supabase.functions.invoke("upsert-listing", {
+    body: listing,
+  });
+
+  if (error) {
+    console.error("Function execution error:", error);
+    throw new Error(error.message || "Upsert failed");
+  }
+
+  return data; // { ok: true, listingID }
+};
+
+export { fetchUserListings, updateListingsCache, deleteListing, upsertListing };

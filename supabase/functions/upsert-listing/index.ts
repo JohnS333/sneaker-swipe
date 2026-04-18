@@ -3,8 +3,16 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 // Deno errors can be ignored in local dev. 
 // to deploy: $ npx supabase functions deploy upsert-listing
 
-interface UpsertListingRequest {
-  listingID?: string;
+interface Listing {
+  listingID: string;
+  brand: string;
+  name: string;
+  type: string;
+  size: number;
+  price: number;
+  imageURL: string;
+  listerUID?: string;
+  description?: string;
 }
 
 const corsHeaders = {
@@ -19,9 +27,9 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { listingID } = (await req.json().catch(() => ({}))) as UpsertListingRequest;
+    const listing = (await req.json().catch(() => ({}))) as Listing;
 
-    if (!listingID) {
+    if (!listing.listingID) {
       return new Response(JSON.stringify({ error: "listingID is required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -68,7 +76,7 @@ Deno.serve(async (req: Request) => {
 
     const { error: upsertError } = await supabaseAdmin
       .from("listings")
-      .upsert({ listingID, listerUID: user.id }, { onConflict: "listingID" });
+      .upsert(listing, { onConflict: "listingID" });
 
     if (upsertError) {
       return new Response(JSON.stringify({ error: "Failed to upsert listing" }), {
@@ -77,7 +85,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    return new Response(JSON.stringify({ ok: true, listingID }), {
+    return new Response(JSON.stringify({ ok: true, listingID: listing.listingID }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
@@ -85,10 +93,10 @@ Deno.serve(async (req: Request) => {
     try {
       // await addToQdrant(listingID);
     } catch (e) {
-      await supabaseAdmin.from("listings").delete().eq("listingID", listingID);
+      await supabaseAdmin.from("listings").delete().eq("listingID", listing.listingID);
       console.error("Failed to add listing to Qdrant, rolled back Supabase insert", {
         error: (e as Error).message ?? "Unknown error",
-        listingID
+        listingID: listing.listingID
       });
     }
 

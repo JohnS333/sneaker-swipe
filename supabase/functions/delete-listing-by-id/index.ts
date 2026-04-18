@@ -3,6 +3,8 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 // Deno errors can be ignored in local dev. 
 // to deploy: $ npx supabase functions deploy delete-listing-by-id
 
+//
+
 interface DeleteListingRequest {
   listingID?: string;
 }

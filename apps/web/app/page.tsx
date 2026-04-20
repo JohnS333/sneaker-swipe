@@ -1,5 +1,5 @@
-import SwipeCards from "@/components/swipe-cards";
-import { createClient } from "@/utils/supabase/server";
+import Main from "@/components/main";
+import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 
 export default async function Home() {
@@ -18,5 +18,5 @@ export default async function Home() {
     user?.email ??
     null;
 
-  return <SwipeCards isSignedIn={!!user} username={username} />;
+  return <Main isSignedIn={!!user} username={username} />;
 }

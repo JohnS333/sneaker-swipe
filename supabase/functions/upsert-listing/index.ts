@@ -127,7 +127,7 @@ Deno.serve(async (req: Request) => {
         throw new Error(`add-vector failed: ${res.status} ${err}`);
         }
 
-      return res.json();
+      // return res.json();
     } catch (e) {
       await supabaseAdmin.from("listings").delete().eq("listingID", listing.listingID);
       console.error("Failed to add listing to Qdrant, rolled back Supabase insert", {

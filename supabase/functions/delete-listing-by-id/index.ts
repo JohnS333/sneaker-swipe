@@ -70,11 +70,9 @@ Deno.serve(async (req: Request) => {
 
     const { data: listing, error: listingErr } = await supabaseAdmin
       .from("listings")
-      .select("listingID,listerUID")
+      .select("*")
       .eq("listingID", listingID)
       .maybeSingle();
-
-
 
     if (listingErr) {
       return new Response(JSON.stringify({ error: "Failed to fetch listing" }), {
@@ -112,22 +110,33 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    return new Response(JSON.stringify({ ok: true, listingID }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+
 
     // Try to delete listing from qdrant. Catch if fail=> restore supabase row.
     try {
-      // await qdrantClient.deletePoint("listings", listingID);
+      const res = await fetch(`http://vectordb.gageserver.net/remove-vector/${listingID}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(`remove-vector failed: ${res.status} ${err}`);
+        }
+
       
     } catch (qdrantErr) {
-      // await supabaseAdmin.from("listings").insert(listing);
+      await supabaseAdmin.from("listings").insert(listing);
       console.error("Failed to delete from qdrant, restored Supabase row:", qdrantErr);
       return new Response(JSON.stringify({ error: "Failed to delete listing from search index, but Supabase record was restored" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    return new Response(JSON.stringify({ ok: true, listingID }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (e) {
     return new Response(
       JSON.stringify({ error: (e as Error).message ?? "Unknown error" }),

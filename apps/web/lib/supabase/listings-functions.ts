@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Listing } from "@/components/listing-card";
 
 // Lives for the page session. Clears automatically on full reload.
+// THIS FILE IS CLIENT-VISIBLE, It calls edge functions that perform the actual DB operations, and updates the local cache for instant UI updates.
 let listingsCache: Listing[] | null = null;
 
 const fetchUserListings = async ( 

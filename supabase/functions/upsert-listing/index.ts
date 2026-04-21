@@ -2,7 +2,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 // Deno errors can be ignored in local dev. 
 // to deploy: $ npx supabase functions deploy upsert-listing
-
+// after deploying, urn off "Verify JWT with legacy secret" in functions settings.
 interface Listing {
   listingID: string;
   brand: string;

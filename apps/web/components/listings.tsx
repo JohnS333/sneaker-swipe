@@ -34,7 +34,7 @@ export default function Listings() {
   const handleCreate = async (data: Omit<Listing, "listingID">) => {
     const newListing: Listing = { ...data, listingID: crypto.randomUUID() };
     try {
-      console.log("Inserting new listing into Supabase:", newListing);
+      console.log("Upserting new listing with supabase edge function:", newListing);
       const response = await upsertListing(newListing, supabase);
       console.log("Supabase response:", response);
     } catch (error) {
@@ -49,10 +49,19 @@ export default function Listings() {
     setCreating(false);
   };
 
-  const handleUpdate = (listingID: string, data: Omit<Listing, "listingID">) => {
+  const handleUpdate = async (listingID: string, data: Omit<Listing, "listingID">) => {
+    const updatedListing: Listing = { ...data, listingID };
     console.log("TODO: Update listing via Supabase edge function", listingID, data);
+    try {
+      console.log("Upserting new listing on Supabase Edge Function:", updatedListing);
+      const response = await upsertListing(updatedListing, supabase);
+      console.log("Supabase response:", response);
+    } catch (error) {
+      console.error("Error updating listing on database:", error);
+    }
+
     setListings((prev) =>
-      prev.map((l) => (l.listingID === listingID ? { ...data, listingID } : l))
+      prev.map((l) => (l.listingID === listingID ? updatedListing : l))
     );
   };
 

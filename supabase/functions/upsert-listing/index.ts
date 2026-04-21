@@ -21,6 +21,34 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+function listingToTextItem(listing: Listing) {
+  const text = [
+    listing.brand,
+    listing.name,
+    listing.type,
+    `size ${listing.size}`,
+    `$${listing.price}`,
+    `${listing.description || ""}`
+  ]
+    .filter(Boolean)
+    .join(" | ");
+
+  return {
+    id: listing.listingID,
+    text,
+    metadata: {
+      listingID: listing.listingID,
+      brand: listing.brand,
+      name: listing.name,
+      type: listing.type,
+      size: listing.size,
+      price: listing.price,
+      imageURL: listing.imageURL,
+      listerUID: listing.listerUID || null
+    }
+  };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
@@ -85,13 +113,21 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    return new Response(JSON.stringify({ ok: true, listingID: listing.listingID }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-
     // Try to add listing to qdrant. Catch if fail=> delete supabase row.
     try {
-      // await addToQdrant(listingID);
+      const qdrantCompatibleListing = listingToTextItem(listing);
+      const res = await fetch("http://vectordb.gageserver.net/add-vector", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify([qdrantCompatibleListing]) // endpoint expects List[TextItem]
+      });
+
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(`add-vector failed: ${res.status} ${err}`);
+        }
+
+      return res.json();
     } catch (e) {
       await supabaseAdmin.from("listings").delete().eq("listingID", listing.listingID);
       console.error("Failed to add listing to Qdrant, rolled back Supabase insert", {
@@ -99,7 +135,9 @@ Deno.serve(async (req: Request) => {
         listingID: listing.listingID
       });
     }
-
+    return new Response(JSON.stringify({ ok: true, listingID: listing.listingID }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (e) {
     return new Response(
       JSON.stringify({ error: (e as Error).message ?? "Unknown error" }),

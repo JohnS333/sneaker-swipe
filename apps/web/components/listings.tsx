@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Plus } from "lucide-react";
 import ListingCard, { type Listing } from "@/components/listing-card";
 import { createClient as createBrowserClient } from "@/lib/supabase/client";
-import { deleteListing, fetchUserListings, updateListingsCache, upsertListing } from "@/lib/supabase/listings-functions-proxy";
+import { deleteListing, fetchUserListings, updateListingsCache, upsertListing } from "@/lib/supabase/listings-functions";
 
 const supabase = createBrowserClient();
 const { data } = await supabase.auth.getUser();

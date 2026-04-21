@@ -51,7 +51,7 @@ export default function Listings() {
 
   const handleUpdate = async (listingID: string, data: Omit<Listing, "listingID">) => {
     const updatedListing: Listing = { ...data, listingID };
-    console.log("TODO: Update listing via Supabase edge function", listingID, data);
+    console.log("Upserting listing via Supabase edge function", listingID, data);
     try {
       console.log("Upserting new listing on Supabase Edge Function:", updatedListing);
       const response = await upsertListing(updatedListing, supabase);
@@ -66,7 +66,7 @@ export default function Listings() {
   };
 
   const handleDelete = async (listingID: string) => {
-    console.log("TODO: Delete listing via Supabase edge function", listingID);
+    console.log("Deleting listing via Supabase edge function", listingID);
     try {
       await deleteListing(listingID, supabase);
       setListings((prev) => {

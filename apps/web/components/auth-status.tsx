@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { User } from "lucide-react";
+import { Trash2, User } from "lucide-react";
 import { createClient as createBrowserClient } from "@/lib/supabase/client";
+import { deleteAccount } from "@/lib/supabase/delete-user-account";
 
 // ─── Animation variants ───────────────────────────────────────────────────────
 
@@ -14,17 +15,17 @@ const containerVariants = {
     height: 48,
     borderRadius: "50%",
     transition: {
-      borderRadius: { delay: 0.3, duration: 0.12, ease: "easeIn" },
+      borderRadius: { delay: 0.3, duration: 0.12, ease: "easeIn" as const },
       width: { delay: 0.2, duration: 0.3, ease: [0.4, 0, 0.2, 1] as const },
       height: { delay: 0.2, duration: 0.3, ease: [0.4, 0, 0.2, 1] as const },
     },
   },
   expanded: {
     width: 230,
-    height: 108,
+    height: 148,
     borderRadius: 12,
     transition: {
-      borderRadius: { duration: 0.08, ease: "easeOut" },
+      borderRadius: { duration: 0.08, ease: "easeOut" as const },
       width: { delay: 0.06, duration: 0.35, ease: [0.4, 0, 0.2, 1] as const },
       height: { delay: 0.06, duration: 0.35, ease: [0.4, 0, 0.2, 1] as const },
     },
@@ -36,13 +37,13 @@ const iconVariants = {
     opacity: 1,
     rotate: 0,
     scale: 1,
-    transition: { delay: 0.45, duration: 0.2, ease: "easeOut" },
+    transition: { delay: 0.45, duration: 0.2, ease: "easeOut" as const },
   },
   expanded: {
     opacity: 0,
     rotate: 180,
     scale: 0.4,
-    transition: { duration: 0.1, ease: "easeIn" },
+    transition: { duration: 0.1, ease: "easeIn" as const },
   },
 };
 
@@ -53,7 +54,7 @@ const contentVariants = {
   },
   expanded: {
     opacity: 1,
-    transition: { delay: 0.52, duration: 0.2, ease: "easeOut" },
+    transition: { delay: 0.52, duration: 0.2, ease: "easeOut" as const },
   },
 };
 
@@ -65,15 +66,44 @@ type AuthStatusProps = {
 
 export default function AuthStatus({ username }: AuthStatusProps) {
   const [hovered, setHovered] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const router = useRouter();
 
   const handleLogout = async () => {
-    setLoading(true);
+    setLogoutLoading(true);
     const supabase = createBrowserClient();
     await supabase.auth.signOut();
     router.refresh();
-    setLoading(false);
+    setLogoutLoading(false);
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm("are you sure you want to delete your account?");
+    if (!confirmed) return;
+
+    setDeleteLoading(true);
+    const supabase = createBrowserClient();
+
+    try {
+      const {
+        data: { user },
+        error: userErr,
+      } = await supabase.auth.getUser();
+
+      if (userErr || !user) {
+        throw new Error(userErr?.message ?? "No user in session");
+      }
+
+      await deleteAccount(user.id, supabase);
+      await supabase.auth.signOut();
+      router.refresh();
+    } catch (error) {
+      console.error("Delete account failed:", error);
+      alert("Unable to delete account. Please try again.");
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   return (
@@ -104,14 +134,25 @@ export default function AuthStatus({ username }: AuthStatusProps) {
             {username}
           </p>
         </div>
-        <button
-          onClick={handleLogout}
-          disabled={loading}
-          // re-enable pointer events only for the button
-          className="pointer-events-auto w-full rounded-md bg-neutral-900 px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-60"
-        >
-          {loading ? "Logging out…" : "Logout"}
-        </button>
+        <div className="flex flex-col gap-1.5">
+          <button
+            onClick={handleLogout}
+            disabled={logoutLoading || deleteLoading}
+            // re-enable pointer events only for the button
+            className="pointer-events-auto w-full rounded-md bg-neutral-900 px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-60"
+          >
+            {logoutLoading ? "Logging out..." : "Logout"}
+          </button>
+          <button
+            onClick={handleDeleteAccount}
+            disabled={logoutLoading || deleteLoading}
+            className="pointer-events-auto inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-red-600 px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red-500 disabled:opacity-60"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            {deleteLoading ? "Deleting..." : "Delete account"}
+          </button>
+        </div>
+        
       </motion.div>
     </motion.div>
   );

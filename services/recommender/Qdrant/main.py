@@ -34,6 +34,11 @@ class SearchRequest(BaseModel):
     query_vector: Optional[List[float]] = None # For direct vector-based search
     top_n: int = 5
 
+class VectorItem(BaseModel):
+    id: uuid.UUID
+    vector: List[float] 
+    metadata: Dict[str, Any]
+
 # --- Routes ---
 
 @app.on_event("startup")
@@ -59,6 +64,20 @@ async def add_vector(items: List[TextItem]):
             
         qdrant.add_points(vectors, ids, payloads)
         return {"message": f"Successfully added {len(ids)} vectors"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.post("/add-vector-ID")
+async def add_vector_by_ID(items: List[VectorItem]):
+    try:
+        ids = [str(item.id) for item in items]
+        vectors = [item.vector for item in items]
+        payloads = [item.metadata for item in items]
+        
+        # Qdrant's upsert will add new IDs and overwrite existing ones
+        qdrant.add_points(vectors, ids, payloads)
+        
+        return {"message": f"Successfully added/updated {len(ids)} vectors"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

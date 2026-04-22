@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Listing } from "@/components/listing-card";
 
 // Lives for the page session. Clears automatically on full reload.
+// THIS FILE IS CLIENT-VISIBLE, It calls edge functions that perform the actual DB operations, and updates the local cache for instant UI updates.
 let listingsCache: Listing[] | null = null;
 
 const fetchUserListings = async ( 
@@ -40,4 +41,17 @@ const deleteListing = async (listingID: string, supabase: SupabaseClient) => {
   return data; // { ok: true, listingID }
 };
 
-export { fetchUserListings, updateListingsCache, deleteListing };
+const upsertListing = async (listing: Listing, supabase: SupabaseClient) => {
+  const { data, error } = await supabase.functions.invoke("upsert-listing", {
+    body: listing,
+  });
+
+  if (error) {
+    console.error("Function execution error:", error);
+    throw new Error(error.message || "Upsert failed");
+  }
+
+  return data; // { ok: true, listingID }
+};
+
+export { fetchUserListings, updateListingsCache, deleteListing, upsertListing };

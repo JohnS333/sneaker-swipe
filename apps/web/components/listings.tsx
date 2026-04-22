@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Plus } from "lucide-react";
 import ListingCard, { type Listing } from "@/components/listing-card";
 import { createClient as createBrowserClient } from "@/lib/supabase/client";
-import { deleteListing, fetchUserListings, updateListingsCache } from "@/lib/supabase/listings-functions-proxy";
+import { deleteListing, fetchUserListings, updateListingsCache, upsertListing } from "@/lib/supabase/listings-functions";
 
 const supabase = createBrowserClient();
 const { data } = await supabase.auth.getUser();
@@ -33,13 +33,9 @@ export default function Listings() {
 
   const handleCreate = async (data: Omit<Listing, "listingID">) => {
     const newListing: Listing = { ...data, listingID: crypto.randomUUID() };
-    console.log(
-      "TODO: Persist new listing via Supabase edge function",
-      newListing
-    );
     try {
-      console.log("Inserting new listing into Supabase:", newListing);
-      const response = await supabase.from("listings").insert(newListing);
+      console.log("Upserting new listing with supabase edge function:", newListing);
+      const response = await upsertListing(newListing, supabase);
       console.log("Supabase response:", response);
     } catch (error) {
       console.error("Error creating listing on database:", error);
@@ -53,15 +49,24 @@ export default function Listings() {
     setCreating(false);
   };
 
-  const handleUpdate = (listingID: string, data: Omit<Listing, "listingID">) => {
-    console.log("TODO: Update listing via Supabase edge function", listingID, data);
+  const handleUpdate = async (listingID: string, data: Omit<Listing, "listingID">) => {
+    const updatedListing: Listing = { ...data, listingID };
+    console.log("Upserting listing via Supabase edge function", listingID, data);
+    try {
+      console.log("Upserting new listing on Supabase Edge Function:", updatedListing);
+      const response = await upsertListing(updatedListing, supabase);
+      console.log("Supabase response:", response);
+    } catch (error) {
+      console.error("Error updating listing on database:", error);
+    }
+
     setListings((prev) =>
-      prev.map((l) => (l.listingID === listingID ? { ...data, listingID } : l))
+      prev.map((l) => (l.listingID === listingID ? updatedListing : l))
     );
   };
 
   const handleDelete = async (listingID: string) => {
-    console.log("TODO: Delete listing via Supabase edge function", listingID);
+    console.log("Deleting listing via Supabase edge function", listingID);
     try {
       await deleteListing(listingID, supabase);
       setListings((prev) => {

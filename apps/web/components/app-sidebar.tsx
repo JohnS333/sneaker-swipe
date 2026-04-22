@@ -10,9 +10,31 @@ import {
   SidebarHeader,
 } from "@/components/ui/sidebar";
 import { useCart } from "@/components/cart-context";
+import { useState } from "react";
+
 
 export function AppSidebar() {
   const { items, itemCount, subtotal, setQuantity, removeItem, clearCart } = useCart();
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+
+  async function handleCheckout() {
+    if (items.length === 0 || isCheckingOut) return;
+    setIsCheckingOut(true);
+    try {
+      await fetch("/api/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items }),
+      });
+       clearCart(); // visually empties cart
+    } catch (e) {
+    console.error("Checkout failed", e);
+    } finally {
+    setIsCheckingOut(false);
+    }
+  }
+
+
 
   return (
     <Sidebar side="left">
@@ -101,6 +123,10 @@ export function AppSidebar() {
           <Trash2 />
           Clear cart
         </Button>
+        <Button onClick={handleCheckout} disabled={items.length === 0 || isCheckingOut}>
+      {isCheckingOut ? "Processing..." : "Checkout"}
+
+      </Button>
       </SidebarFooter>
     </Sidebar>
   );

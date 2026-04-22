@@ -163,6 +163,11 @@ function SwipeableCard({
           onDragStart={(e) => e.preventDefault()}
           className="h-full w-full object-contain pointer-events-none"
         />
+        <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/75 via-black/40 to-transparent p-4 text-white">
+          <p className="text-xs uppercase tracking-wide text-white/80">{card.brand} • {card.type}</p>
+          <h3 className="text-lg font-semibold leading-tight">{card.name} • Size: {card.size} </h3> 
+          <p className="mt-1 text-sm font-medium">${card.price.toFixed(2)}</p>
+        </div>
 
         <motion.div
           style={{ opacity: likeStrength, backgroundColor: likeTint }}

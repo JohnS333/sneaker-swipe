@@ -3,7 +3,7 @@ import uuid
 from typing import List, Dict, Any, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sentence_transformers import SentenceTransformer
 from Qdrant.Qdrant_man import Qdrant_Manager
 
@@ -27,7 +27,7 @@ embedder = SentenceTransformer("all-MiniLM-L6-v2")
 class TextItem(BaseModel):
     id: uuid.UUID
     text: str 
-    metadata: Dict[str, Any]
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
 class SearchRequest(BaseModel):
     query_text: Optional[str] = None      # For text-based search
@@ -37,7 +37,7 @@ class SearchRequest(BaseModel):
 class VectorItem(BaseModel):
     id: uuid.UUID
     vector: List[float] 
-    metadata: Dict[str, Any]
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
 # --- Routes ---
 
@@ -67,8 +67,8 @@ async def add_vector(items: List[TextItem]):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@app.post("/add-vector-ID")
-async def add_vector_by_ID(items: List[VectorItem]):
+@app.post("/add-vector-raw")
+async def add_vector_raw(items: List[VectorItem]):
     try:
         ids = [str(item.id) for item in items]
         vectors = [item.vector for item in items]

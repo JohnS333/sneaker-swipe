@@ -1,12 +1,10 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createClient as createSupabaseServerClient } from "@/lib/supabase/server";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 type CheckoutItem = {
-  id?: number | string;
+  id?: string;
   listingID?: string;
-  quantity?: number;
 };
 
 type CheckoutRequestBody = {
@@ -16,6 +14,7 @@ type CheckoutRequestBody = {
 type OrderRow = {
   userID: string;
   listingID: string;
+  datetime: string;
 };
 
 // type VectorPointResponse = {
@@ -29,24 +28,23 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 // const VECTOR_SERVICE_URL = process.env.VECTOR_SERVICE_URL ?? "http://vectordb.gageserver.net";
 
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
 function getListingID(item: CheckoutItem): string | null {
-  if (typeof item.listingID === "string" && item.listingID.trim()) {
+  if (typeof item.listingID === "string" && isUuid(item.listingID.trim())) {
     return item.listingID.trim();
   }
 
-  if (typeof item.id === "string" && item.id.trim()) {
+  if (typeof item.id === "string" && isUuid(item.id.trim())) {
     return item.id.trim();
   }
 
-  if (typeof item.id === "number" && Number.isFinite(item.id)) {
-    return String(item.id);
-  }
-
-  return null;
+  // if item doesnt havea listingid, just generate one for now
+    return crypto.randomUUID();
 }
 
 function expandCartItems(items: CheckoutItem[]): OrderRow[] {
@@ -60,6 +58,7 @@ function expandCartItems(items: CheckoutItem[]): OrderRow[] {
     return [{
       listingID,
       userID: "",
+      datetime: new Date().toISOString(),
     }];
   });
 }
@@ -164,13 +163,6 @@ function expandCartItems(items: CheckoutItem[]): OrderRow[] {
 // }
 
 export async function POST(request: Request) {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    return NextResponse.json(
-      { ok: false, error: "Missing Supabase environment variables" },
-      { status: 500, headers: corsHeaders }
-    );
-  }
-
   const cookieStore = await cookies();
   const supabase = createSupabaseServerClient(cookieStore);
   const {
@@ -207,9 +199,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const supabaseAdmin = createSupabaseClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-  const { error: insertError } = await supabaseAdmin.from("orders").insert(orderRows);
+  const { error: insertError } = await supabase.from("orders").insert(orderRows);
 
   if (insertError) {
     return NextResponse.json(
@@ -218,7 +208,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { count: totalOrderCount, error: countError } = await supabaseAdmin
+  const { count: totalOrderCount, error: countError } = await supabase
     .from("orders")
     .select("listingID", { count: "exact", head: true })
     .eq("userID", user.id);
@@ -230,10 +220,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const preferenceVectorResult: {
-    updated: boolean;
-    message?: string;
-  } = { updated: false };
+//   const preferenceVectorResult: {
+//     updated: boolean;
+//     message?: string;
+//   } = { updated: false };
 
 //   const orderCount = totalOrderCount ?? 0;
 
@@ -273,7 +263,7 @@ export async function POST(request: Request) {
       ok: true,
       insertedOrders: orderRows.length,
       totalOrderCount,
-      preferenceVector: preferenceVectorResult,
+      // preferenceVector: preferenceVectorResult,
     },
     { status: 200, headers: corsHeaders }
   );

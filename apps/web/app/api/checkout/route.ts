@@ -109,12 +109,12 @@ export async function POST(request: Request) {
 //     .select("listingID", { count: "exact", head: true })
 //     .eq("userID", user.id);
 
-  if (countError) {
-    return NextResponse.json(
-      { ok: false, error: countError.message },
-      { status: 500, headers: corsHeaders }
-    );
-  }
+//   if (countError) {
+//     return NextResponse.json(
+//       { ok: false, error: countError.message },
+//       { status: 500, headers: corsHeaders }
+//     );
+//   }
 
 
   return NextResponse.json(

@@ -104,10 +104,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const { count: totalOrderCount, error: countError } = await supabase
-    .from("orders")
-    .select("listingID", { count: "exact", head: true })
-    .eq("userID", user.id);
+//   const { count: totalOrderCount, error: countError } = await supabase
+//     .from("orders")
+//     .select("listingID", { count: "exact", head: true })
+//     .eq("userID", user.id);
 
   if (countError) {
     return NextResponse.json(
@@ -121,7 +121,7 @@ export async function POST(request: Request) {
     {
       ok: true,
       insertedOrders: orderRows.length,
-      totalOrderCount,
+    //   totalOrderCount,
     },
     { status: 200, headers: corsHeaders }
   );

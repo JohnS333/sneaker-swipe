@@ -14,7 +14,7 @@ import { useState } from "react";
 
 
 export function AppSidebar() {
-  const { items, itemCount, subtotal, setQuantity, removeItem, clearCart } = useCart();
+  const { items, itemCount, subtotal, removeItem, clearCart } = useCart();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   async function handleCheckout() {
@@ -36,6 +36,10 @@ export function AppSidebar() {
           payload,
         });
         throw new Error(payload?.error ?? `Checkout failed (${res.status})`);
+      }
+
+      if (payload?.generatedIDs) {
+        console.log("Generated IDs for items without listingID:", payload.generatedIDs);
       }
 
       clearCart(); // visually empties cart

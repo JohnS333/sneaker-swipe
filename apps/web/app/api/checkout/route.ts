@@ -17,6 +17,7 @@ type OrderRow = {
   datetime: string;
 };
 
+var generatedIDs: string[] = [];
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,7 +39,10 @@ function getListingID(item: CheckoutItem): string | null {
   }
 
   // if item doesnt havea listingid, just generate one for now
-    return crypto.randomUUID();
+  const newID = crypto.randomUUID();
+  generatedIDs.push(newID);
+  return newID;
+
 }
 
 function expandCartItems(items: CheckoutItem[]): OrderRow[] {
@@ -121,7 +125,7 @@ export async function POST(request: Request) {
     {
       ok: true,
       insertedOrders: orderRows.length,
-    //   totalOrderCount,
+      generatedIDs: generatedIDs,
     },
     { status: 200, headers: corsHeaders }
   );

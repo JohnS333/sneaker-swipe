@@ -21,12 +21,24 @@ export function AppSidebar() {
     if (items.length === 0 || isCheckingOut) return;
     setIsCheckingOut(true);
     try {
-      await fetch("/api/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items }),
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items }),
       });
-       clearCart(); // visually empties cart
+
+      const payload = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        console.error("Checkout failed", {
+          status: res.status,
+          statusText: res.statusText,
+          payload,
+        });
+        throw new Error(payload?.error ?? `Checkout failed (${res.status})`);
+      }
+
+      clearCart(); // visually empties cart
     } catch (e) {
     console.error("Checkout failed", e);
     } finally {

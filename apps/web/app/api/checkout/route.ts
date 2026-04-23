@@ -17,18 +17,12 @@ type OrderRow = {
   datetime: string;
 };
 
-// type VectorPointResponse = {
-//   vector?: number[] | Record<string, number[]>;
-//   result?: Array<{ vector?: number[] | Record<string, number[]> }>;
-// };
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
-
-// const VECTOR_SERVICE_URL = process.env.VECTOR_SERVICE_URL ?? "http://vectordb.gageserver.net";
 
 function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
@@ -63,104 +57,6 @@ function expandCartItems(items: CheckoutItem[]): OrderRow[] {
   });
 }
 
-// function extractVectorFromResponse(response: unknown): number[] | null {
-//   if (Array.isArray(response)) {
-//     return extractVectorFromResponse(response[0]);
-//   }
-
-//   if (!response || typeof response !== "object") {
-//     return null;
-//   }
-
-//   const typedResponse = response as VectorPointResponse & Record<string, unknown>;
-//   const directVector = typedResponse.vector;
-
-//   if (Array.isArray(directVector) && directVector.every((value) => typeof value === "number")) {
-//     return directVector;
-//   }
-
-//   if (directVector && typeof directVector === "object") {
-//     const firstVector = Object.values(directVector).find(
-//       (value): value is number[] => Array.isArray(value) && value.every((entry) => typeof entry === "number")
-//     );
-
-//     if (firstVector) {
-//       return firstVector;
-//     }
-//   }
-
-//   if (Array.isArray(typedResponse.result) && typedResponse.result.length > 0) {
-//     return extractVectorFromResponse(typedResponse.result[0]);
-//   }
-
-//   if ("points" in typedResponse && Array.isArray((typedResponse as { points?: unknown[] }).points)) {
-//     const firstPoint = (typedResponse as { points?: unknown[] }).points?.[0];
-//     return extractVectorFromResponse(firstPoint);
-//   }
-
-//   return null;
-// }
-
-// function averageVectors(vectors: number[][]): number[] {
-//   if (vectors.length === 0) {
-//     throw new Error("No vectors available to average");
-//   }
-
-//   const vectorLength = vectors[0]?.length ?? 0;
-//   if (vectorLength === 0) {
-//     throw new Error("Vectors are empty");
-//   }
-
-//   const sum = new Array(vectorLength).fill(0);
-
-//   for (const vector of vectors) {
-//     if (vector.length !== vectorLength) {
-//       throw new Error("Vector length mismatch while averaging preference vector");
-//     }
-
-//     for (let index = 0; index < vectorLength; index += 1) {
-//       sum[index] += vector[index];
-//     }
-//   }
-
-//   return sum.map((value) => value / vectors.length);
-// }
-
-// async function fetchListingVector(listingID: string): Promise<number[]> {
-//   const response = await fetch(`${VECTOR_SERVICE_URL}/vector/${listingID}`);
-
-//   if (!response.ok) {
-//     const errorText = await response.text();
-//     throw new Error(`Failed to fetch vector for ${listingID}: ${response.status} ${errorText}`);
-//   }
-
-//   const payload = (await response.json()) as unknown;
-//   const vector = extractVectorFromResponse(payload);
-
-//   if (!vector) {
-//     throw new Error(`Vector payload for ${listingID} did not contain a usable vector`);
-//   }
-
-//   return vector;
-// }
-
-// async function savePreferenceVector(userID: string, vector: number[], sourceListingIDs: string[]) {
-
-//     // const res = await fetch("http://vectordb.gageserver.net/add-vector-raw", {
-//     //     method: "POST",
-//     //     headers: { "Content-Type": "application/json" },
-//     //     body: {"id": userID, "vector": vector} // endpoint expects List[TextItem]
-//     //     });
-
-//   if (!res.ok) {
-//     const errorText = await res.text();
-//     throw new Error(`Failed to upsert preference vector into Qdrant: ${res.status} ${errorText}`);
-//   }
-// }
-
-// export async function OPTIONS() {
-//   return new NextResponse(null, { status: 204, headers: corsHeaders });
-// }
 
 export async function POST(request: Request) {
   const cookieStore = await cookies();
@@ -220,50 +116,12 @@ export async function POST(request: Request) {
     );
   }
 
-//   const preferenceVectorResult: {
-//     updated: boolean;
-//     message?: string;
-//   } = { updated: false };
-
-//   const orderCount = totalOrderCount ?? 0;
-
-//   if (orderCount >= 5) {
-//     try {
-//       const { data: recentOrders, error: recentOrdersError } = await supabaseAdmin
-//         .from("orders")
-//         .select("listingID")
-//         .eq("userID", user.id)
-//         .order("created_at", { ascending: false })
-//         .limit(5);
-
-//       if (recentOrdersError) {
-//         throw recentOrdersError;
-//       }
-
-//       const recentListingIDs = (recentOrders ?? [])
-//         .map((order) => order.listingID)
-//         .filter((listingID): listingID is string => typeof listingID === "string" && listingID.trim().length > 0);
-
-//       if (recentListingIDs.length === 5) {
-//         const vectors = await Promise.all(recentListingIDs.map((listingID) => fetchListingVector(listingID)));
-//         const averageVector = averageVectors(vectors);
-//         await savePreferenceVector(user.id, averageVector, recentListingIDs);
-//         preferenceVectorResult.updated = true;
-//       } else {
-//         preferenceVectorResult.message = "Not enough valid listing vectors to update preference vector";
-//       }
-//     } catch (error) {
-//       preferenceVectorResult.message = (error as Error).message;
-//       console.error("Preference vector update skipped:", error);
-//     }
-//   }
 
   return NextResponse.json(
     {
       ok: true,
       insertedOrders: orderRows.length,
       totalOrderCount,
-      // preferenceVector: preferenceVectorResult,
     },
     { status: 200, headers: corsHeaders }
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { Minus, Plus, ShoppingCart, Trash2, X } from "lucide-react";
+import { Minus, ShoppingCart, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sidebar,
@@ -85,7 +85,10 @@ export function AppSidebar() {
                       <p className="text-muted-foreground text-xs">
                         ${item.price.toFixed(2)} each
                       </p>
+                      
                       <div className="mt-2 flex items-center gap-1.5">
+                        {/*  //quantity is irrelevant. checkout route will create one order per row item regardless of quantity. 
+                        // userID*Timestamp*listingID is the unique identifier for each row, theres no orderID. so quantity will break this
                         <Button
                           variant="outline"
                           size="icon-xs"
@@ -94,6 +97,7 @@ export function AppSidebar() {
                           <Minus />
                         </Button>
                         <span className="w-6 text-center text-sm">{item.quantity}</span>
+                        
                         <Button
                           variant="outline"
                           size="icon-xs"
@@ -101,6 +105,7 @@ export function AppSidebar() {
                         >
                           <Plus />
                         </Button>
+                        */}
                       </div>
                     </div>
                     <Button

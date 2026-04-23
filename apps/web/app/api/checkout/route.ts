@@ -17,7 +17,7 @@ type OrderRow = {
   datetime: string;
 };
 
-var generatedIDs: string[] = [];
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,7 +29,7 @@ function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
-function getListingID(item: CheckoutItem): string | null {
+function getListingID(item: CheckoutItem, generatedIDs: string[]): string | null {
   if (typeof item.listingID === "string" && isUuid(item.listingID.trim())) {
     return item.listingID.trim();
   }
@@ -45,9 +45,9 @@ function getListingID(item: CheckoutItem): string | null {
 
 }
 
-function expandCartItems(items: CheckoutItem[]): OrderRow[] {
+function expandCartItems(items: CheckoutItem[], generatedIDs: string[]): OrderRow[] {
   return items.flatMap((item) => {
-    const listingID = getListingID(item);
+    const listingID = getListingID(item, generatedIDs);
 
     if (!listingID) {
       return [];
@@ -79,6 +79,7 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => ({}))) as CheckoutRequestBody;
   const items = Array.isArray(body.items) ? body.items : [];
+  var generatedIDs: string[] = [];
 
   if (items.length === 0) {
     return NextResponse.json(
@@ -87,7 +88,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const orderRows = expandCartItems(items).map((row) => ({
+  const orderRows = expandCartItems(items, generatedIDs).map((row) => ({
     ...row,
     userID: user.id,
   }));

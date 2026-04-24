@@ -6,19 +6,9 @@ import { ShoppingBag, Trash } from "lucide-react";
 import { useCart } from "@/components/cart-context";
 import { getFeedListings, type FeedListing } from "@/lib/supabase/listings-functions";
 import { createClient as createBrowserClient } from "@/lib/supabase/client";
-// import data from "@data/seeds/shoes.json";
 
 console.log("Fetching feed listings from Supabase Edge Function...");
 const supabase = createBrowserClient();
-
-var data = convertFeedToCards(await getFeedListings(supabase).then((res) => {
-  console.log("Received feed listings:", res.results);
-  return res.results;
-}).catch((err) => {
-  console.error("Failed to fetch feed listings:", err);
-  return [];
-}
-));
 
 
 interface CardItem {
@@ -43,10 +33,6 @@ function convertFeedToCards(results: FeedListing[]): CardItem[] {
 }
 
 
-
-
-
-// var ALL_CARDS: CardItem[] = data;
 
 function shuffled(arr: CardItem[]): CardItem[] {
   const copy = [...arr];

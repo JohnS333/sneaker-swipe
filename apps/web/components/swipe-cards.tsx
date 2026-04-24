@@ -4,10 +4,25 @@ import React, { useMemo, useState } from "react";
 import { motion, useMotionValue, useTransform, AnimatePresence } from "framer-motion";
 import { ShoppingBag, Trash } from "lucide-react";
 import { useCart } from "@/components/cart-context";
-import data from "@data/seeds/shoes.json";
+import { getFeedListings, type FeedListing } from "@/lib/supabase/listings-functions";
+import { createClient as createBrowserClient } from "@/lib/supabase/client";
+// import data from "@data/seeds/shoes.json";
+
+console.log("Fetching feed listings from Supabase Edge Function...");
+const supabase = createBrowserClient();
+
+var data = convertFeedToCards(await getFeedListings(supabase).then((res) => {
+  console.log("Received feed listings:", res.results);
+  return res.results;
+}).catch((err) => {
+  console.error("Failed to fetch feed listings:", err);
+  return [];
+}
+));
+
 
 interface CardItem {
-  id: number;
+  id: string | number;
   brand: string;
   name: string;
   size: number;
@@ -15,8 +30,19 @@ interface CardItem {
   image: string;
   price: number;
 }
+function convertFeedToCards(results: FeedListing[]): CardItem[] {
+  return results.map((item) => ({
+    id: item.payload.listingID ?? item.id,
+    brand: item.payload.brand,
+    name: item.payload.name,
+    size: item.payload.size,
+    type: item.payload.type,
+    image: item.payload.imageURL,
+    price: item.payload.price,
+  }));
+}
 
-const ALL_CARDS: CardItem[] = data;
+var ALL_CARDS: CardItem[] = data;
 
 function shuffled(arr: CardItem[]): CardItem[] {
   const copy = [...arr];

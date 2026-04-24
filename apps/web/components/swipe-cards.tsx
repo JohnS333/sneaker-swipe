@@ -4,10 +4,15 @@ import React, { useMemo, useState } from "react";
 import { motion, useMotionValue, useTransform, AnimatePresence } from "framer-motion";
 import { ShoppingBag, Trash } from "lucide-react";
 import { useCart } from "@/components/cart-context";
-import data from "@data/seeds/shoes.json";
+import { getFeedListings, type FeedListing } from "@/lib/supabase/listings-functions";
+import { createClient as createBrowserClient } from "@/lib/supabase/client";
+
+console.log("Fetching feed listings from Supabase Edge Function...");
+const supabase = createBrowserClient();
+
 
 interface CardItem {
-  id: number;
+  id: string | number;
   brand: string;
   name: string;
   size: number;
@@ -15,8 +20,19 @@ interface CardItem {
   image: string;
   price: number;
 }
+function convertFeedToCards(results: FeedListing[]): CardItem[] {
+  return results.map((item) => ({
+    id: item.payload.listingID ?? item.id,
+    brand: item.payload.brand,
+    name: item.payload.name,
+    size: item.payload.size,
+    type: item.payload.type,
+    image: item.payload.imageURL,
+    price: item.payload.price,
+  }));
+}
 
-const ALL_CARDS: CardItem[] = data;
+
 
 function shuffled(arr: CardItem[]): CardItem[] {
   const copy = [...arr];
@@ -28,13 +44,33 @@ function shuffled(arr: CardItem[]): CardItem[] {
 }
 
 export default function SwipeCards() {
-  const [cards, setCards] = useState<CardItem[]>(() => shuffled(ALL_CARDS));
+  const [cards, setCards] = useState<CardItem[]>([]);
+
+  async function loadCards() {
+  try {
+    const response = await getFeedListings(supabase);
+    const nextCards = convertFeedToCards(response.results);
+    setCards(shuffled(nextCards));
+  } catch (err) {
+    console.error("Failed to fetch feed listings:", err);
+    setCards([]);
+  }
+}
+
+  React.useEffect(() => {
+    void loadCards();
+  }, []);
+  // react useEffect is needed to avoid render-fetch loop, since the feed listings are dynamic and can change on every request. 
+  // We want to fetch them once on component mount, and then rely on user interactions to change the cards state.
+
   const { addItem } = useCart();
 
   const top = cards[cards.length - 1] ?? null;
   const rest = useMemo(() => cards.slice(0, -1), [cards]);
 
-  const reset = () => setCards(shuffled(ALL_CARDS));
+  const reset = () => {
+  void loadCards();
+};
   const removeTop = () => setCards((prev) => prev.slice(0, -1));
 
   const handleSwipe = (direction: 1 | -1) => {

@@ -42,7 +42,11 @@ function convertFeedToCards(results: FeedListing[]): CardItem[] {
   }));
 }
 
-var ALL_CARDS: CardItem[] = data;
+
+
+
+
+// var ALL_CARDS: CardItem[] = data;
 
 function shuffled(arr: CardItem[]): CardItem[] {
   const copy = [...arr];
@@ -54,13 +58,33 @@ function shuffled(arr: CardItem[]): CardItem[] {
 }
 
 export default function SwipeCards() {
-  const [cards, setCards] = useState<CardItem[]>(() => shuffled(ALL_CARDS));
+  const [cards, setCards] = useState<CardItem[]>([]);
+
+  async function loadCards() {
+  try {
+    const response = await getFeedListings(supabase);
+    const nextCards = convertFeedToCards(response.results);
+    setCards(shuffled(nextCards));
+  } catch (err) {
+    console.error("Failed to fetch feed listings:", err);
+    setCards([]);
+  }
+}
+
+  React.useEffect(() => {
+    void loadCards();
+  }, []);
+  // react useEffect is needed to avoid render-fetch loop, since the feed listings are dynamic and can change on every request. 
+  // We want to fetch them once on component mount, and then rely on user interactions to change the cards state.
+
   const { addItem } = useCart();
 
   const top = cards[cards.length - 1] ?? null;
   const rest = useMemo(() => cards.slice(0, -1), [cards]);
 
-  const reset = () => setCards(shuffled(ALL_CARDS));
+  const reset = () => {
+  void loadCards();
+};
   const removeTop = () => setCards((prev) => prev.slice(0, -1));
 
   const handleSwipe = (direction: 1 | -1) => {

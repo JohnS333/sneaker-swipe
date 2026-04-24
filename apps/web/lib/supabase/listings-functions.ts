@@ -54,4 +54,16 @@ const upsertListing = async (listing: Listing, supabase: SupabaseClient) => {
   return data; // { ok: true, listingID }
 };
 
-export { fetchUserListings, updateListingsCache, deleteListing, upsertListing };
+
+const getFeedListings = async (supabase: SupabaseClient): Promise<Listing[]> => {
+  const { data, error } = await supabase.functions.invoke("get-feed"); 
+
+  if (error) {
+    console.error("Function execution error:", error);
+    throw new Error(error.message || "Failed to fetch feed listings");
+  }
+
+  return data as Listing[];
+};
+
+export { fetchUserListings, updateListingsCache, deleteListing, upsertListing, getFeedListings };

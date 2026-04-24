@@ -50,6 +50,7 @@ export default function SwipeCards() {
   try {
     const response = await getFeedListings(supabase);
     const nextCards = convertFeedToCards(response.results);
+    console.log("Fetched feed listings and converted to cards:", nextCards);
     setCards(shuffled(nextCards));
   } catch (err) {
     console.error("Failed to fetch feed listings:", err);

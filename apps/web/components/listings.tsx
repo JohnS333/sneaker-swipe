@@ -7,6 +7,7 @@ import ListingCard, { type Listing } from "@/components/listing-card";
 import { createClient as createBrowserClient } from "@/lib/supabase/client";
 import { deleteListing, fetchUserListings, updateListingsCache, upsertListing } from "@/lib/supabase/listings-functions";
 
+
 const supabase = createBrowserClient();
 const { data } = await supabase.auth.getUser();
 const userID = data?.user?.id;
@@ -14,8 +15,18 @@ console.log("Current user ID:", userID);
 
 
 // ─── Component ────────────────────────────────────────────────────────────────
+function sumOfListings(Listings: Listing[]): number {
+  let sum = 0;
+  for (const l of Listings) {
+    sum += l.price; 
+  }
+  return sum;
+}
+
 
 export default function Listings() {
+
+  
   const [listings, setListings] = useState<Listing[]>([]);
   const [creating, setCreating] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -103,7 +114,11 @@ export default function Listings() {
               className="rounded-full bg-neutral-200 px-2 py-0.5 text-xs font-medium text-neutral-600"
             >
               {listings.length}
+
+        
             </motion.span>
+            Total Listing Amount: ${sumOfListings(listings)}
+            
           </div>
 
           <motion.button

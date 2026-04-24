@@ -146,3 +146,39 @@ curl -X POST http://localhost:1269/search \
 | UI Components | shadcn/ui, Radix UI, Framer Motion |
 | ML Service | Python, sentence-transformers, Qdrant |
 | Database | Supabase (Postgres + Auth) |
+
+
+
+## Deploying to a Remote Server
+
+If your target server can't build the image locally, build and export it on your dev machine, then load it on the server.
+
+**1. Build and export**
+
+```bash
+docker buildx build \
+  --platform linux/amd64 \
+  -f services/recommender/Dockerfile \
+  -t swipe-buy-recommender:latest \
+  --load \
+  .
+
+docker save swipe-buy-recommender:latest -o recommender.tar
+```
+
+**2. Transfer the tarball**
+
+Copy `recommender.tar` to your server (e.g. via `scp`, `rsync`, or your cloud provider's file transfer).
+
+**3. Load and run on the server**
+
+```bash
+docker load -i recommender.tar
+
+docker run -d \
+  -p 1269:8000 \
+  -e QDRANT_URL=http://localhost:6333 \
+  -v ~/qdrant/storage:/qdrant/storage \
+  --name recommender \
+  swipe-buy-recommender:latest
+```

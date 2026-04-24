@@ -121,9 +121,53 @@ async def get_vector_by_id(vector_id: uuid.UUID):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/remove-vector/{vector_id}")
-async def remove_vector(vector_id: uuid.UUID): 
+async def remove_vector(vector_id: uuid.UUID):
     try:
         qdrant.delete([str(vector_id)])
         return {"message": f"Vector {vector_id} removed"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class UserRecommendRequest(BaseModel):
+    listing_ids: List[uuid.UUID]       # IDs of listings to build preference vector from
+    exclude_ids: List[uuid.UUID] = []  # IDs to exclude from results (e.g. already ordered)
+    top_n: int = 10
+
+@app.post("/recommend/user")
+async def recommend_for_user(request: UserRecommendRequest):
+    if not request.listing_ids:
+        raise HTTPException(status_code=400, detail="listing_ids must not be empty")
+
+    try:
+        # Fetch vectors for each listing from Qdrant
+        vectors = []
+        for listing_id in request.listing_ids:
+            point = qdrant.query_by_ID(listing_id)
+            if point and point.vector:
+                vectors.append(point.vector)
+
+        if not vectors:
+            raise HTTPException(status_code=404, detail="No vectors found for provided listing_ids")
+
+        # Build preference vector: recency-weighted average (most recent = highest weight)
+        import numpy as np
+        n = len(vectors)
+        weights = [i + 1 for i in range(n)]  # [1, 2, ..., n] — last element is most recent
+        preference_vector = np.average(vectors, axis=0, weights=weights).tolist()
+
+        # Search Qdrant for similar listings
+        results = qdrant.query(preference_vector, n=request.top_n + len(request.exclude_ids))
+
+        # Filter out excluded IDs
+        exclude_set = {str(eid) for eid in request.exclude_ids}
+        filtered = [
+            {"id": res.id, "score": res.score, "payload": res.payload}
+            for res in results
+            if str(res.id) not in exclude_set
+        ][:request.top_n]
+
+        return {"results": filtered}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

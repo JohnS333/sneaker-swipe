@@ -1,5 +1,35 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
+interface Listing {
+  listingID: string;
+  brand: string;
+  name: string;
+  type: string;
+  size: number;
+  price: number;
+  imageURL: string;
+  listerUID?: string;
+}
+
+type FeedResult = {
+  id: string;
+  score: number;
+  payload: {
+    listingID: string;
+    brand: string;
+    name: string;
+    size: number;
+    type: string;
+    imageURL: string;
+    price: number;
+    listerUID?: string | null;
+  };
+};
+
+type OrderRow = {
+  listingID: string;
+};
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -7,6 +37,45 @@ const corsHeaders = {
 };
 
 const RECOMMENDER_URL = Deno.env.get("RECOMMENDER_URL") ?? "http://vectordb.gageserver.net";
+
+function shuffle<T>(items: T[]): T[] {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function toFeedResults(listings: Listing[]): FeedResult[] {
+  return listings.map((listing) => ({
+    id: listing.listingID,
+    score: 0,
+    payload: {
+      listingID: listing.listingID,
+      brand: listing.brand,
+      name: listing.name,
+      size: listing.size,
+      type: listing.type,
+      imageURL: listing.imageURL,
+      price: listing.price,
+      listerUID: listing.listerUID ?? null,
+    },
+  }));
+}
+
+async function getRandomListings(supabaseAdmin: ReturnType<typeof createClient>) {
+  const { data: listings, error } = await supabaseAdmin
+    .from("listings")
+    .select("listingID, brand, name, type, size, price, imageURL, listerUID");
+
+  if (error) {
+    throw new Error("Failed to fetch fallback listings");
+  }
+
+  const randomListings = shuffle((listings ?? []) as Listing[]).slice(0, 10);
+  return { results: toFeedResults(randomListings) };
+}
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -64,6 +133,16 @@ Deno.serve(async (req: Request) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query_text: "shoes", top_n: 10 }),
       });
+
+      if (!res.ok) {
+        const err = await res.text();
+        console.error("Recommender search failed, falling back to random listings:", res.status, err);
+        const fallbackFeed = await getRandomListings(supabaseAdmin);
+        return new Response(JSON.stringify(fallbackFeed), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const data = await res.json();
       return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -71,8 +150,9 @@ Deno.serve(async (req: Request) => {
     }
 
     // listing_ids ordered oldest→newest so weights favour the most recent
-    const listingIds = orders.map((o) => o.listingID).reverse();
-    const excludeIds = orders.map((o) => o.listingID); // don't resurface already-bought items
+    const orderRows = orders as OrderRow[];
+    const listingIds = orderRows.map((order) => order.listingID).reverse();
+    const excludeIds = orderRows.map((order) => order.listingID); // don't resurface already-bought items
 
     const res = await fetch(`${RECOMMENDER_URL}/recommend/user`, {
       method: "POST",
@@ -82,8 +162,9 @@ Deno.serve(async (req: Request) => {
 
     if (!res.ok) {
       const err = await res.text();
-      return new Response(JSON.stringify({ error: `Recommender error: ${err}` }), {
-        status: 502,
+      console.error("Recommender failed, falling back to random listings:", res.status, err);
+      const fallbackFeed = await getRandomListings(supabaseAdmin);
+      return new Response(JSON.stringify(fallbackFeed), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -93,9 +174,20 @@ Deno.serve(async (req: Request) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    return new Response(JSON.stringify({ error: (e as Error).message ?? "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    try {
+      const supabaseAdmin = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      const fallbackFeed = await getRandomListings(supabaseAdmin);
+      return new Response(JSON.stringify(fallbackFeed), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    } catch (fallbackErr) {
+      return new Response(JSON.stringify({ error: (fallbackErr as Error).message ?? (e as Error).message ?? "Unknown error" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
   }
 });

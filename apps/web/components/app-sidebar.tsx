@@ -1,6 +1,6 @@
 "use client";
 
-import { Minus, Plus, ShoppingCart, Trash2, X } from "lucide-react";
+import { Minus, ShoppingCart, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sidebar,
@@ -10,9 +10,47 @@ import {
   SidebarHeader,
 } from "@/components/ui/sidebar";
 import { useCart } from "@/components/cart-context";
+import { useState } from "react";
+
 
 export function AppSidebar() {
-  const { items, itemCount, subtotal, setQuantity, removeItem, clearCart } = useCart();
+  const { items, itemCount, subtotal, removeItem, clearCart } = useCart();
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+
+  async function handleCheckout() {
+    if (items.length === 0 || isCheckingOut) return;
+    setIsCheckingOut(true);
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items }),
+      });
+
+      const payload = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        console.error("Checkout failed", {
+          status: res.status,
+          statusText: res.statusText,
+          payload,
+        });
+        throw new Error(payload?.error ?? `Checkout failed (${res.status})`);
+      }
+
+      if (payload?.generatedIDs) {
+        console.log("Generated IDs for items without listingID:", payload.generatedIDs);
+      }
+
+      clearCart(); // visually empties cart
+    } catch (e) {
+    console.error("Checkout failed", e);
+    } finally {
+    setIsCheckingOut(false);
+    }
+  }
+
+
 
   return (
     <Sidebar side="left">
@@ -51,7 +89,10 @@ export function AppSidebar() {
                       <p className="text-muted-foreground text-xs">
                         ${item.price.toFixed(2)} each
                       </p>
+                      
                       <div className="mt-2 flex items-center gap-1.5">
+                        {/*  //quantity is irrelevant. checkout route will create one order per row item regardless of quantity. 
+                        // userID*Timestamp*listingID is the unique identifier for each row, theres no orderID. so quantity will break this
                         <Button
                           variant="outline"
                           size="icon-xs"
@@ -60,6 +101,7 @@ export function AppSidebar() {
                           <Minus />
                         </Button>
                         <span className="w-6 text-center text-sm">{item.quantity}</span>
+                        
                         <Button
                           variant="outline"
                           size="icon-xs"
@@ -67,6 +109,7 @@ export function AppSidebar() {
                         >
                           <Plus />
                         </Button>
+                        */}
                       </div>
                     </div>
                     <Button
@@ -101,6 +144,10 @@ export function AppSidebar() {
           <Trash2 />
           Clear cart
         </Button>
+        <Button onClick={handleCheckout} disabled={items.length === 0 || isCheckingOut}>
+      {isCheckingOut ? "Processing..." : "Checkout"}
+
+      </Button>
       </SidebarFooter>
     </Sidebar>
   );

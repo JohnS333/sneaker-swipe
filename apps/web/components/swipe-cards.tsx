@@ -2,12 +2,17 @@
 
 import React, { useMemo, useState } from "react";
 import { motion, useMotionValue, useTransform, AnimatePresence } from "framer-motion";
-import { ShoppingBag, ThumbsDown, ThumbsUp, Trash } from "lucide-react";
+import { ShoppingBag, Trash } from "lucide-react";
 import { useCart } from "@/components/cart-context";
-import data from "@data/seeds/shoes.json";
+import { getFeedListings, type FeedListing } from "@/lib/supabase/listings-functions";
+import { createClient as createBrowserClient } from "@/lib/supabase/client";
+
+console.log("Fetching feed listings from Supabase Edge Function...");
+const supabase = createBrowserClient();
+
 
 interface CardItem {
-  id: number;
+  id: string | number;
   brand: string;
   name: string;
   size: number;
@@ -15,8 +20,19 @@ interface CardItem {
   image: string;
   price: number;
 }
+function convertFeedToCards(results: FeedListing[]): CardItem[] {
+  return results.map((item) => ({
+    id: item.payload.listingID ?? item.id,
+    brand: item.payload.brand,
+    name: item.payload.name,
+    size: item.payload.size,
+    type: item.payload.type,
+    image: item.payload.imageURL,
+    price: item.payload.price,
+  }));
+}
 
-const ALL_CARDS: CardItem[] = data;
+
 
 function shuffled(arr: CardItem[]): CardItem[] {
   const copy = [...arr];
@@ -28,19 +44,38 @@ function shuffled(arr: CardItem[]): CardItem[] {
 }
 
 export default function SwipeCards() {
-  const [cards, setCards] = useState<CardItem[]>(() => shuffled(ALL_CARDS));
+  const [cards, setCards] = useState<CardItem[]>([]);
+
+  async function loadCards() {
+  try {
+    const response = await getFeedListings(supabase);
+    const nextCards = convertFeedToCards(response.results);
+    console.log("Fetched feed listings and converted to cards:", nextCards);
+    setCards(shuffled(nextCards));
+  } catch (err) {
+    console.error("Failed to fetch feed listings:", err);
+    setCards([]);
+  }
+}
+
+  React.useEffect(() => {
+    void loadCards();
+  }, []);
+  // react useEffect is needed to avoid render-fetch loop, since the feed listings are dynamic and can change on every request. 
+  // We want to fetch them once on component mount, and then rely on user interactions to change the cards state.
+
   const { addItem } = useCart();
 
   const top = cards[cards.length - 1] ?? null;
   const rest = useMemo(() => cards.slice(0, -1), [cards]);
 
-  const reset = () => setCards(shuffled(ALL_CARDS));
-
+  const reset = () => {
+  void loadCards();
+};
   const removeTop = () => setCards((prev) => prev.slice(0, -1));
 
   const handleSwipe = (direction: 1 | -1) => {
     if (!top) return;
-
     if (direction === 1) {
       addItem({
         id: top.id,
@@ -52,17 +87,11 @@ export default function SwipeCards() {
         price: top.price,
       });
     }
-
     removeTop();
   };
 
   return (
-    <div
-      className="grid min-h-[100svh] w-full place-items-center bg-neutral-100 touch-none select-none"
-      style={{
-        backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke-width='2' stroke='%23d4d4d4'%3e%3cpath d='M0 .5H31.5V32'/%3e%3c/svg%3e")`,
-      }}
-    >
+    <div className="grid place-items-center" style={{ minHeight: "calc(100svh - 80px)" }}>
       <div className="relative h-[42rem] w-[32rem]">
         {rest.slice(-2).map((c, idx) => (
           <motion.div
@@ -86,11 +115,7 @@ export default function SwipeCards() {
 
         <AnimatePresence>
           {top ? (
-            <SwipeableCard
-              key={top.id}
-              card={top}
-              onSwipe={handleSwipe}
-            />
+            <SwipeableCard key={top.id} card={top} onSwipe={handleSwipe} />
           ) : (
             <motion.div
               key="empty"
@@ -146,7 +171,7 @@ function SwipeableCard({
       drag="x"
       dragConstraints={{ left: 0, right: 0 }}
       dragElastic={0.25}
-      custom={dir} 
+      custom={dir}
       onDragStart={(e) => e.preventDefault()}
       onDragEnd={() => {
         const v = x.get();
@@ -162,8 +187,8 @@ function SwipeableCard({
       animate={{ opacity: 1, scale: 1 }}
       exit={{
         opacity: 0,
-        x: dir > 0 ? 500 : -500,     
-        rotate: dir > 0 ? 18 : -18,  
+        x: dir > 0 ? 500 : -500,
+        rotate: dir > 0 ? 18 : -18,
         transition: { duration: 0.18 },
       }}
     >
@@ -175,6 +200,11 @@ function SwipeableCard({
           onDragStart={(e) => e.preventDefault()}
           className="h-full w-full object-contain pointer-events-none"
         />
+        <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/75 via-black/40 to-transparent p-4 text-white">
+          <p className="text-xs uppercase tracking-wide text-white/80">{card.brand} • {card.type}</p>
+          <h3 className="text-lg font-semibold leading-tight">{card.name} • Size: {card.size} </h3> 
+          <p className="mt-1 text-sm font-medium">${card.price.toFixed(2)}</p>
+        </div>
 
         <motion.div
           style={{ opacity: likeStrength, backgroundColor: likeTint }}

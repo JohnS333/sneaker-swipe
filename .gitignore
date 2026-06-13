@@ -1,7 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+**/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -11,7 +11,8 @@
 !.yarn/versions
 
 # testing
-/coverage
+**/coverage
+.pytest_cache/
 
 # next.js
 /.next/
@@ -21,8 +22,14 @@
 /build
 
 # misc
-.DS_Store
+**/.DS_Store
 *.pem
+
+# python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
 
 # debug
 npm-debug.log*
@@ -42,3 +49,8 @@ yarn-error.log*
 next-env.d.ts
 /apps/web/.next
 /.claude
+/.vscode
+
+
+/apps/web/node_modules
+.env*.local
